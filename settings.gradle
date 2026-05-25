@@ -1,7 +1,4 @@
-// Nome do projeto exibido no IDE e nos logs de build
-rootProject.name = "fermata-demo"
-
-// Repositórios de plugins do Gradle (onde o AGP e Kotlin são baixados)
+// pluginManagement DEVE ser o primeiro bloco do arquivo (regra do Gradle)
 pluginManagement {
     repositories {
         google()
@@ -10,7 +7,7 @@ pluginManagement {
     }
 }
 
-// Repositórios de dependências (onde as libs do AndroidX são baixadas)
+// Repositórios de dependências (AndroidX, Material, etc.)
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -18,6 +15,9 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+
+// Nome do projeto
+rootProject.name = "fermata-demo"
 
 // Inclui o módulo :app na compilação
 include ':app'
