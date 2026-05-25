@@ -1,0 +1,19 @@
+# local.properties contém o caminho do SDK no seu computador
+# Cada desenvolvedor tem um caminho diferente — não vai ao GitHub
+local.properties
+
+# Arquivos de módulo do IDE (IntelliJ/Android Studio)
+*.iml
+.idea/
+
+# Pastas de build geradas automaticamente — não precisam ir ao repositório
+.gradle/
+build/
+app/build/
+
+# Arquivos temporários do macOS
+.DS_Store
+
+# Keystores e certificados (nunca commitar credenciais!)
+*.jks
+*.keystore

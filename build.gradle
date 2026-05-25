@@ -1,0 +1,10 @@
+// Bloco de plugins no nível do PROJETO (raiz)
+// "apply false" = declara o plugin mas não o aplica aqui
+// Ele será aplicado dentro de app/build.gradle
+plugins {
+    // AGP = Android Gradle Plugin - responsável por compilar código Android
+    id 'com.android.application' version '8.2.2' apply false
+
+    // Plugin Kotlin para Android - compila o código .kt
+    id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+}

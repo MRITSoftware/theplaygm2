@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        app_name: nome padrão do app (fallback)
+        Na prática, cada productFlavor sobrescreve este valor via resValue no build.gradle:
+          • Flavor "bloqueado"    → "Fermata BLOQUEADO"
+          • Flavor "desbloqueado" → "Fermata DESBLOQUEADO"
+        Este valor só seria usado se o flavor não definir o resValue
+    -->
+    <string name="app_name">Fermata Demo</string>
+</resources>

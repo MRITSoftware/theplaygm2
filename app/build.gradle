@@ -1,0 +1,129 @@
+// Aplica os plugins declarados no build.gradle raiz para este módulo
+plugins {
+    id 'com.android.application'       // Compila como app Android (.apk)
+    id 'org.jetbrains.kotlin.android'  // Habilita compilação de arquivos .kt
+}
+
+android {
+    // Namespace = pacote base do app (deve ser único na Play Store)
+    namespace 'com.exemplo.fermata_demo'
+
+    // Versão do SDK usado para COMPILAR o app (mais recente disponível)
+    compileSdk 34
+
+    defaultConfig {
+        // ID único que identifica o app no dispositivo e na Play Store
+        applicationId "com.exemplo.fermata_demo"
+
+        // API mínima suportada: 26 = Android 8.0 Oreo (cobre ~95% dos dispositivos)
+        // Usamos 26 para poder usar ícones adaptativos (adaptive icons) sem PNGs
+        minSdk 26
+
+        // API alvo: o app foi testado e otimizado para Android 14
+        targetSdk 34
+
+        // Número interno de versão (incrementado a cada release)
+        versionCode 1
+
+        // Versão legível pelo usuário
+        versionName "1.0"
+    }
+
+    // ============================================================
+    // PRODUCT FLAVORS - aqui está a mágica dos dois APKs!
+    // Cada flavor gera um APK separado com configurações diferentes.
+    // ============================================================
+
+    // Declara que vamos usar uma dimensão chamada "modo"
+    flavorDimensions += "modo"
+
+    productFlavors {
+
+        // --------------------------------------------------------
+        // FLAVOR 1: APK BLOQUEADO
+        // BuildConfig.DESBLOQUEADO = false
+        // Comportamento: exibe a tela de bloqueio, YouTube NÃO carrega
+        // --------------------------------------------------------
+        bloqueado {
+            dimension "modo"
+
+            // Sufixo no ID — permite instalar os dois APKs no mesmo celular
+            // ID final: com.exemplo.fermata_demo.bloqueado
+            applicationIdSuffix ".bloqueado"
+
+            // Aparece na versão exibida ao usuário
+            versionNameSuffix "-bloqueado"
+
+            // CHAVE CENTRAL: injeta "false" na classe BuildConfig gerada
+            // O código Kotlin lê BuildConfig.DESBLOQUEADO para decidir o comportamento
+            buildConfigField "boolean", "DESBLOQUEADO", "false"
+
+            // Nome do app que aparece embaixo do ícone na tela do celular
+            resValue "string", "app_name", "Fermata BLOQUEADO"
+        }
+
+        // --------------------------------------------------------
+        // FLAVOR 2: APK DESBLOQUEADO
+        // BuildConfig.DESBLOQUEADO = true
+        // Comportamento: carrega m.youtube.com no WebView
+        // --------------------------------------------------------
+        desbloqueado {
+            dimension "modo"
+
+            // ID final: com.exemplo.fermata_demo.desbloqueado
+            applicationIdSuffix ".desbloqueado"
+
+            versionNameSuffix "-desbloqueado"
+
+            // CHAVE CENTRAL: injeta "true" na classe BuildConfig
+            buildConfigField "boolean", "DESBLOQUEADO", "true"
+
+            resValue "string", "app_name", "Fermata DESBLOQUEADO"
+        }
+    }
+
+    buildTypes {
+        // Build de debug: sem ofuscação, com logs, para desenvolvimento e testes
+        debug {
+            // Não ofusca o código (facilita leitura durante testes)
+            minifyEnabled false
+        }
+
+        // Build de release: seria para publicar na Play Store (não usamos aqui)
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    // Habilita a geração automática da classe BuildConfig
+    // Sem isso, "BuildConfig.DESBLOQUEADO" não compilaria
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Define a versão do Java usada para compilar o código Kotlin
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    // Define a versão do JVM alvo para o compilador Kotlin
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+// ============================================================
+// DEPENDÊNCIAS - bibliotecas externas usadas no projeto
+// ============================================================
+dependencies {
+    // AppCompat: fornece a classe AppCompatActivity e compatibilidade com temas
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+
+    // Material Design: componentes de UI do Google (botões, cores, estilos)
+    implementation 'com.google.android.material:material:1.11.0'
+
+    // ConstraintLayout: sistema de layout flexível (incluído por padrão em projetos Android)
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+}

@@ -1,0 +1,23 @@
+// Nome do projeto exibido no IDE e nos logs de build
+rootProject.name = "fermata-demo"
+
+// Repositórios de plugins do Gradle (onde o AGP e Kotlin são baixados)
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+// Repositórios de dependências (onde as libs do AndroidX são baixadas)
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+// Inclui o módulo :app na compilação
+include ':app'

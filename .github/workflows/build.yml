@@ -1,0 +1,150 @@
+# ============================================================
+# GitHub Actions Workflow — Build dos dois APKs da demo
+#
+# Este workflow compila automaticamente dois APKs:
+#   • fermata-demo-BLOQUEADO    (BuildConfig.DESBLOQUEADO = false)
+#   • fermata-demo-DESBLOQUEADO (BuildConfig.DESBLOQUEADO = true)
+#
+# Os APKs ficam disponíveis na aba "Actions" > "Artifacts" do GitHub
+# ============================================================
+
+name: Build Fermata Demo APKs
+
+on:
+  # Executa automaticamente em qualquer push para main ou master
+  push:
+    branches: [ main, master ]
+
+  # Executa em pull requests para main ou master
+  pull_request:
+    branches: [ main, master ]
+
+  # Permite executar manualmente pela interface do GitHub
+  # (Aba Actions → seleciona o workflow → "Run workflow")
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compilar APKs Debug
+    runs-on: ubuntu-latest  # Máquina Linux gratuita fornecida pelo GitHub
+
+    steps:
+
+      # ----------------------------------------------------------
+      # PASSO 1: Baixar o código do repositório para a máquina do CI
+      # ----------------------------------------------------------
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      # ----------------------------------------------------------
+      # PASSO 2: Instalar o JDK 17
+      # O Android Gradle Plugin 8.x requer Java 17 ou superior
+      # "temurin" = distribuição gratuita da Eclipse Foundation (Adoptium)
+      # ----------------------------------------------------------
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # ----------------------------------------------------------
+      # PASSO 3: Instalar o Gradle 8.4
+      # Como não há gradlew no repositório, usamos esta action
+      # que baixa e configura o Gradle diretamente no PATH do CI
+      # ----------------------------------------------------------
+      - name: Configurar Gradle 8.4
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.4'
+
+      # ----------------------------------------------------------
+      # PASSO 4: Aceitar as licenças do Android SDK
+      # O ubuntu-latest já vem com o Android SDK instalado,
+      # mas as licenças precisam ser aceitas antes do primeiro build
+      # "|| true" evita que o step falhe se já estiverem aceitas
+      # ----------------------------------------------------------
+      - name: Aceitar licenças do Android SDK
+        run: yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
+
+      # ----------------------------------------------------------
+      # PASSO 5: Garantir que as ferramentas necessárias estão instaladas
+      # "platforms;android-34" = SDK do Android 14 (compileSdk/targetSdk)
+      # "build-tools;34.0.0"   = ferramentas de build (aapt2, d8, etc.)
+      # ----------------------------------------------------------
+      - name: Instalar platform e build-tools Android 34
+        run: |
+          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
+            "platforms;android-34" \
+            "build-tools;34.0.0" > /dev/null 2>&1 || true
+
+      # ----------------------------------------------------------
+      # PASSO 6: Criar o local.properties com o caminho do Android SDK
+      # O Gradle usa este arquivo para encontrar o SDK na máquina
+      # $ANDROID_SDK_ROOT é uma variável de ambiente do ubuntu-latest
+      # que aponta para /usr/local/lib/android/sdk
+      # ----------------------------------------------------------
+      - name: Criar local.properties com caminho do SDK
+        run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+      # ----------------------------------------------------------
+      # PASSO 7: Compilar o APK BLOQUEADO
+      # Tarefa Gradle: assembleBloqueadoDebug
+      #   • "assemble"   = compila e empacota o APK
+      #   • "Bloqueado"  = usa o productFlavor "bloqueado" do build.gradle
+      #   • "Debug"      = usa o buildType "debug" (sem ofuscação)
+      #
+      # Isso gera: app/build/outputs/apk/bloqueado/debug/app-bloqueado-debug.apk
+      # Este APK tem BuildConfig.DESBLOQUEADO = false
+      # ----------------------------------------------------------
+      - name: Build APK BLOQUEADO (BuildConfig.DESBLOQUEADO = false)
+        run: gradle :app:assembleBloqueadoDebug
+
+      # ----------------------------------------------------------
+      # PASSO 8: Compilar o APK DESBLOQUEADO
+      # Mesma lógica acima, mas com o flavor "desbloqueado"
+      #
+      # Isso gera: app/build/outputs/apk/desbloqueado/debug/app-desbloqueado-debug.apk
+      # Este APK tem BuildConfig.DESBLOQUEADO = true
+      # ----------------------------------------------------------
+      - name: Build APK DESBLOQUEADO (BuildConfig.DESBLOQUEADO = true)
+        run: gradle :app:assembleDesbloqueadoDebug
+
+      # ----------------------------------------------------------
+      # PASSO 9: Publicar o APK BLOQUEADO como artifact
+      # Artifacts ficam disponíveis na aba "Actions" do GitHub
+      # por 30 dias após a execução do workflow
+      # ----------------------------------------------------------
+      - name: Upload APK BLOQUEADO
+        uses: actions/upload-artifact@v4
+        with:
+          name: fermata-demo-BLOQUEADO
+          path: app/build/outputs/apk/bloqueado/debug/app-bloqueado-debug.apk
+          retention-days: 30
+
+      # ----------------------------------------------------------
+      # PASSO 10: Publicar o APK DESBLOQUEADO como artifact
+      # ----------------------------------------------------------
+      - name: Upload APK DESBLOQUEADO
+        uses: actions/upload-artifact@v4
+        with:
+          name: fermata-demo-DESBLOQUEADO
+          path: app/build/outputs/apk/desbloqueado/debug/app-desbloqueado-debug.apk
+          retention-days: 30
+
+      # ----------------------------------------------------------
+      # PASSO 11: Gerar resumo na interface do GitHub Actions
+      # Aparece na página do workflow como uma tabela formatada
+      # ----------------------------------------------------------
+      - name: Resumo dos APKs gerados
+        run: |
+          echo "## Fermata Demo — APKs Gerados" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | BuildConfig.DESBLOQUEADO | Comportamento |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|--------------------------|---------------|" >> $GITHUB_STEP_SUMMARY
+          echo "| fermata-demo-BLOQUEADO | \`false\` | Exibe tela de bloqueio HTML |" >> $GITHUB_STEP_SUMMARY
+          echo "| fermata-demo-DESBLOQUEADO | \`true\` | Carrega m.youtube.com via WebView |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Como baixar os APKs" >> $GITHUB_STEP_SUMMARY
+          echo "1. Clique na execução do workflow" >> $GITHUB_STEP_SUMMARY
+          echo "2. Role até a seção **Artifacts**" >> $GITHUB_STEP_SUMMARY
+          echo "3. Clique no nome do artifact para baixar o ZIP com o APK" >> $GITHUB_STEP_SUMMARY
