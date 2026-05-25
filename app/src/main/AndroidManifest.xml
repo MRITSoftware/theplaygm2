@@ -18,6 +18,11 @@
     -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
+    <!--
+        android:usesCleartextTraffic="false" — bloqueia HTTP não criptografado (força HTTPS)
+        youtube.com já usa HTTPS, então isso não afeta a demo.
+        É uma boa prática de segurança — impede vazamento de dados em redes abertas.
+    -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -25,13 +30,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FermataDemo"
-
-        <!--
-            SEGURANÇA: usesCleartextTraffic="false"
-            Bloqueia tráfego HTTP não criptografado (força HTTPS)
-            youtube.com já usa HTTPS, então isso não afeta a demo
-            Mas é uma boa prática de segurança incluir
-        -->
         android:usesCleartextTraffic="false">
 
         <!--
