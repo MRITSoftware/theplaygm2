@@ -142,10 +142,24 @@ class MainActivity : AppCompatActivity() {
     """.trimIndent()
 
     private fun inicializarPlayer() {
-        player = ExoPlayer.Builder(this).build().also {
-            it.addListener(object : Player.Listener {
+        player = ExoPlayer.Builder(this).build().also { exo ->
+            AutoMediaService.onPlay  = { exo.play() }
+            AutoMediaService.onPause = { exo.pause() }
+            AutoMediaService.onStop  = { exo.stop() }
+
+            exo.addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
                     Toast.makeText(this@MainActivity, "Erro: ${error.message}", Toast.LENGTH_LONG).show()
+                }
+                override fun onPlaybackStateChanged(state: Int) {
+                    if (state == Player.STATE_IDLE || state == Player.STATE_ENDED)
+                        AutoMediaService.atualizarParado()
+                }
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    if (!isPlaying &&
+                        exo.playbackState != Player.STATE_IDLE &&
+                        exo.playbackState != Player.STATE_ENDED
+                    ) AutoMediaService.atualizarPausado()
                 }
             })
         }
@@ -183,6 +197,15 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 atualizarBotoesNavWeb(view)
                 findViewById<TextView>(R.id.tv_web_url).text = Uri.parse(url).host ?: url
+
+                // Envia título do vídeo para o painel do carro
+                view.evaluateJavascript("document.title") { raw ->
+                    val titulo = raw?.trim('"')?.takeIf {
+                        it.isNotBlank() && !it.equals("youtube", ignoreCase = true)
+                    } ?: return@evaluateJavascript
+                    AutoMediaService.atualizarNowPlaying(titulo, "YouTube")
+                }
+
                 // Detecta anúncio: acelera a 32x enquanto rola, restaura ao terminar
                 view.evaluateJavascript("""
                     (function() {
@@ -567,11 +590,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun reproduzirTV(entrada: M3uEntry) {
         player?.run { setMediaItem(MediaItem.fromUri(entrada.url)); prepare(); play() }
+        AutoMediaService.atualizarNowPlaying(entrada.title, entrada.group.ifEmpty { "GM2 Play" })
         Toast.makeText(this, "▶ ${entrada.title}", Toast.LENGTH_SHORT).show()
     }
 
     private fun reproduzirLocal(uri: Uri) {
         player?.run { setMediaItem(MediaItem.fromUri(uri)); prepare(); play() }
+        val nome = videoLibrary.find { it.uri == uri.toString() }?.title
+            ?: uri.lastPathSegment ?: "Vídeo"
+        AutoMediaService.atualizarNowPlaying(nome, "Vídeos Offline")
     }
 
     private fun abrirVideoLocal() {
@@ -618,6 +645,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        AutoMediaService.onPlay  = null
+        AutoMediaService.onPause = null
+        AutoMediaService.onStop  = null
         player?.release()
     }
 }

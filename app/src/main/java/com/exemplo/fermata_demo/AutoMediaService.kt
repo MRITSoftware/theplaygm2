@@ -1,72 +1,175 @@
 package com.exemplo.fermata_demo
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.os.Bundle
 import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.media.MediaBrowserServiceCompat
 
-/**
- * Serviço que registra o app como media player no Android Auto.
- *
- * O Android Auto só permite apps que implementam MediaBrowserServiceCompat
- * na sua tela de mídia. Ao declarar esse serviço, o GM2 Play aparece na
- * lista de players do carro — exatamente o que o Fermata original fazia.
- *
- * Bypass: o Android Auto verifica SE o app é um media player (✓),
- * mas não verifica O QUE o app carrega dentro do WebView (brecha).
- */
 class AutoMediaService : MediaBrowserServiceCompat() {
 
-    private lateinit var mediaSession: MediaSessionCompat
+    private lateinit var session: MediaSessionCompat
+
+    companion object {
+        // Lambdas preenchidas pela MainActivity — controlam o ExoPlayer via volante/carro
+        var onPlay:  (() -> Unit)? = null
+        var onPause: (() -> Unit)? = null
+        var onStop:  (() -> Unit)? = null
+
+        private var sessionRef: MediaSessionCompat? = null
+
+        // Capa gerada uma vez e reutilizada em todas as atualizações
+        val capaPadrao: Bitmap by lazy { criarCapaGM2() }
+
+        fun atualizarNowPlaying(titulo: String, artista: String = "GM2 Play") {
+            sessionRef?.apply {
+                setMetadata(
+                    MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, titulo)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artista)
+                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, "GM2 Play")
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, capaPadrao)
+                        .build()
+                )
+                setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_PLAYING, 0L, 1f)
+                        .setActions(
+                            PlaybackStateCompat.ACTION_PAUSE or
+                            PlaybackStateCompat.ACTION_STOP  or
+                            PlaybackStateCompat.ACTION_PLAY_PAUSE
+                        )
+                        .build()
+                )
+            }
+        }
+
+        fun atualizarPausado() {
+            sessionRef?.setPlaybackState(
+                PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_PAUSED, 0L, 1f)
+                    .setActions(
+                        PlaybackStateCompat.ACTION_PLAY or
+                        PlaybackStateCompat.ACTION_STOP  or
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE
+                    )
+                    .build()
+            )
+        }
+
+        fun atualizarParado() {
+            sessionRef?.apply {
+                setMetadata(
+                    MediaMetadataCompat.Builder()
+                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "GM2 Play")
+                        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Selecione uma mídia para reproduzir")
+                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, capaPadrao)
+                        .build()
+                )
+                setPlaybackState(
+                    PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_STOPPED, 0L, 1f)
+                        .setActions(PlaybackStateCompat.ACTION_PLAY)
+                        .build()
+                )
+            }
+        }
+
+        // Capa 512×512 com identidade visual do GM2 Play para a tela do carro
+        private fun criarCapaGM2(): Bitmap {
+            val size = 512
+            val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bmp)
+            canvas.drawColor(Color.parseColor("#1a1a2e"))
+
+            val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                textAlign = Paint.Align.CENTER
+                typeface  = Typeface.DEFAULT_BOLD
+            }
+
+            // Barra decorativa no topo
+            paint.color = Color.parseColor("#e94560")
+            canvas.drawRect(0f, 0f, size.toFloat(), 12f, paint)
+
+            // Texto "GM2" grande
+            paint.textSize = 200f
+            canvas.drawText("GM2", size / 2f, size / 2f + 70f, paint)
+
+            // Texto "Play" menor em branco
+            paint.color    = Color.WHITE
+            paint.textSize = 80f
+            canvas.drawText("Play", size / 2f, size / 2f + 165f, paint)
+
+            // Barra decorativa na base
+            paint.color = Color.parseColor("#e94560")
+            canvas.drawRect(0f, (size - 12).toFloat(), size.toFloat(), size.toFloat(), paint)
+
+            return bmp
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
 
-        mediaSession = MediaSessionCompat(this, "GM2PlayAutoSession").apply {
-            // Estado inicial: parado, mas pronto para receber comandos do carro
-            setPlaybackState(
-                PlaybackStateCompat.Builder()
-                    .setState(PlaybackStateCompat.STATE_STOPPED, 0L, 1f)
-                    .setActions(
-                        PlaybackStateCompat.ACTION_PLAY or
-                        PlaybackStateCompat.ACTION_PAUSE or
-                        PlaybackStateCompat.ACTION_STOP
-                    )
+        session = MediaSessionCompat(this, "GM2PlayAutoSession").apply {
+
+            // Callback: comandos do volante/painel do carro
+            setCallback(object : MediaSessionCompat.Callback() {
+                override fun onPlay()  { onPlay?.invoke()  }
+                override fun onPause() { onPause?.invoke() }
+                override fun onStop()  { onStop?.invoke()  }
+                override fun onPlayPause() {
+                    val tocando = controller?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
+                    if (tocando) onPause?.invoke() else onPlay?.invoke()
+                }
+            })
+
+            // Estado e metadata iniciais
+            setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "GM2 Play")
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, "Selecione uma mídia para reproduzir")
+                    .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, capaPadrao)
                     .build()
             )
+            setPlaybackState(
+                PlaybackStateCompat.Builder()
+                    .setState(PlaybackStateCompat.STATE_NONE, 0L, 1f)
+                    .setActions(PlaybackStateCompat.ACTION_PLAY)
+                    .build()
+            )
+
             isActive = true
         }
 
-        // Token que autentica o serviço junto ao Android Auto
-        sessionToken = mediaSession.sessionToken
+        sessionToken = session.sessionToken
+        sessionRef   = session
     }
 
-    /**
-     * Android Auto chama esse método para obter a raiz do navegador de mídia.
-     * Retornar um BrowserRoot válido = app aceito pelo sistema do carro.
-     */
     override fun onGetRoot(
         clientPackageName: String,
         clientUid: Int,
         rootHints: Bundle?
-    ): BrowserRoot {
-        return BrowserRoot("gm2_root", null)
-    }
+    ): BrowserRoot = BrowserRoot("gm2_root", null)
 
-    /**
-     * Android Auto chama para listar filhos de uma pasta de mídia.
-     * Lista vazia: o conteúdo real é exibido na MainActivity do celular.
-     */
     override fun onLoadChildren(
         parentId: String,
         result: Result<List<MediaBrowserCompat.MediaItem>>
-    ) {
-        result.sendResult(emptyList())
-    }
+    ) = result.sendResult(emptyList())
 
     override fun onDestroy() {
-        mediaSession.release()
+        // Limpa referências para evitar vazamento de memória
+        sessionRef = null
+        onPlay  = null
+        onPause = null
+        onStop  = null
+        session.release()
         super.onDestroy()
     }
 }
