@@ -21,6 +21,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.text.InputType
+import android.widget.Button
 import android.widget.EditText
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.widget.FrameLayout
