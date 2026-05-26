@@ -17,15 +17,16 @@ jobs:
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      - name: Configurar Java 17 (pré-instalado no runner)
+      - name: Configurar Java 17
         run: |
           echo "JAVA_HOME=$JAVA_HOME_17_X64" >> $GITHUB_ENV
           echo "$JAVA_HOME_17_X64/bin" >> $GITHUB_PATH
 
-      - name: Configurar Gradle 8.4
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.4'
+      - name: Instalar Gradle 8.4
+        run: |
+          wget -q https://services.gradle.org/distributions/gradle-8.4-bin.zip -O /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.4/bin" >> $GITHUB_PATH
 
       - name: Aceitar licenças do Android SDK
         run: yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
@@ -52,4 +53,4 @@ jobs:
       - name: Resumo
         run: |
           echo "## GM2 Play — APK Gerado" >> $GITHUB_STEP_SUMMARY
-          echo "Baixe o artifact **GM2Play-Desbloqueado** na seção Artifacts desta execução." >> $GITHUB_STEP_SUMMARY
+          echo "Baixe o artifact **GM2Play-Desbloqueado** na seção Artifacts." >> $GITHUB_STEP_SUMMARY
