@@ -32,43 +32,45 @@
                 android:orientation="vertical"
                 android:visibility="gone">
 
+                <!-- Cabeçalho: título + menu 3 pontos para alterar a lista -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:background="#111111"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="TV ao Vivo"
+                        android:textColor="#ffffff"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <ImageButton
+                        android:id="@+id/btn_tv_menu"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:src="@drawable/ic_more_vert"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Alterar lista M3U"
+                        android:tint="#aaaaaa"/>
+
+                </LinearLayout>
+
                 <androidx.media3.ui.PlayerView
                     android:id="@+id/player_view_tv"
                     android:layout_width="match_parent"
                     android:layout_height="200dp"
                     android:background="#000000"/>
 
-                <!-- URL da lista M3U -->
-                <LinearLayout
-                    android:id="@+id/layout_m3u"
+                <!-- Separador visual entre player e lista -->
+                <View
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:padding="8dp"
-                    android:background="#111111">
-
-                    <EditText
-                        android:id="@+id/et_m3u_url"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="URL da lista M3U"
-                        android:inputType="textUri"
-                        android:textColor="#ffffff"
-                        android:textColorHint="#666666"
-                        android:backgroundTint="#444444"
-                        android:paddingStart="8dp"
-                        android:singleLine="true"/>
-
-                    <Button
-                        android:id="@+id/btn_carregar"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Carregar"
-                        android:textSize="12sp"
-                        android:backgroundTint="#1e7fd4"/>
-                </LinearLayout>
+                    android:layout_height="2dp"
+                    android:background="#1e7fd4"/>
 
                 <!-- Cabeçalho da categoria selecionada (visível apenas ao entrar em uma pasta) -->
                 <LinearLayout

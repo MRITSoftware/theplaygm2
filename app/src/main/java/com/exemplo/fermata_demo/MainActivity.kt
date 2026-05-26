@@ -20,8 +20,9 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.Button
+import android.text.InputType
 import android.widget.EditText
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.TextView
@@ -97,6 +98,12 @@ class MainActivity : AppCompatActivity() {
         carregarBiblioteca()
         configurarListaOffline()
         mostrarAba(R.id.nav_youtube)
+        hideSystemUi()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemUi()
     }
 
     private fun configurarBotaoVoltar() {
@@ -262,7 +269,7 @@ class MainActivity : AppCompatActivity() {
                 overlayFullscreen.removeAllViews()
                 overlayFullscreen.visibility = View.GONE
                 fullscreenWebCallback = null
-                showSystemUi()
+                hideSystemUi()
             }
         }
 
@@ -310,33 +317,41 @@ class MainActivity : AppCompatActivity() {
             mostrarCategorias()
         }
 
-        findViewById<Button>(R.id.btn_carregar).setOnClickListener {
-            val url = findViewById<EditText>(R.id.et_m3u_url).text.toString().trim()
-            if (url.isEmpty()) {
-                Toast.makeText(this, "Digite a URL da lista M3U", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            carregarLista(url)
+        // 3 pontos → dialog para alterar a URL da lista
+        findViewById<ImageButton>(R.id.btn_tv_menu).setOnClickListener {
+            mostrarDialogUrlM3u()
         }
 
         // Carrega a URL salva automaticamente ao abrir o app
         val urlSalva = getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
             .getString("url", "") ?: ""
-        if (urlSalva.isNotEmpty()) {
-            findViewById<EditText>(R.id.et_m3u_url).setText(urlSalva)
-            carregarLista(urlSalva)
+        if (urlSalva.isNotEmpty()) carregarLista(urlSalva)
+    }
+
+    private fun mostrarDialogUrlM3u() {
+        val urlAtual = getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
+            .getString("url", "") ?: ""
+        val campo = EditText(this).apply {
+            hint = "http://..."
+            inputType = InputType.TYPE_TEXT_VARIATION_URI or InputType.TYPE_CLASS_TEXT
+            setText(urlAtual)
+            setPadding(48, 32, 48, 16)
         }
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Lista M3U")
+            .setMessage("Cole a URL da lista para carregar os canais")
+            .setView(campo)
+            .setPositiveButton("Carregar") { _, _ ->
+                val url = campo.text.toString().trim()
+                if (url.isNotEmpty()) carregarLista(url)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun carregarLista(url: String) {
-        val btn = findViewById<Button>(R.id.btn_carregar)
-        btn.isEnabled = false
-        btn.text = "Carregando…"
-
         lifecycleScope.launch {
             val items = withContext(Dispatchers.IO) { parsearM3u(url) }
-            btn.isEnabled = true
-            btn.text = "Carregar"
 
             if (items.isEmpty()) {
                 Toast.makeText(this@MainActivity, "Lista vazia ou URL inválida", Toast.LENGTH_LONG).show()
@@ -507,7 +522,7 @@ class MainActivity : AppCompatActivity() {
         fullscreenOriginPlayer?.player = player
         fullscreenOriginPlayer = null
         overlayFullscreen.visibility = View.GONE
-        showSystemUi()
+        hideSystemUi()
     }
 
     private fun hideSystemUi() {
@@ -632,7 +647,6 @@ class MainActivity : AppCompatActivity() {
         super.onPictureInPictureModeChanged(isInPiP, newConfig)
         val v = if (isInPiP) View.GONE else View.VISIBLE
         findViewById<View>(R.id.bottom_nav).visibility = v
-        findViewById<View>(R.id.layout_m3u).visibility = v
         findViewById<View>(R.id.layout_youtube_nav).visibility = v
         findViewById<View>(R.id.btn_add_video).visibility = v
         if (isInPiP) {
