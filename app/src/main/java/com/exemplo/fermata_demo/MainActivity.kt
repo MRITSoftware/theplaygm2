@@ -394,51 +394,79 @@ class MainActivity : AppCompatActivity() {
 
     private fun carregarLista(url: String) {
         lifecycleScope.launch {
-            val items = withContext(Dispatchers.IO) { parsearM3u(url) }
-
-            if (items.isEmpty()) {
-                Toast.makeText(this@MainActivity, "Lista vazia ou URL inválida", Toast.LENGTH_LONG).show()
-                return@launch
-            }
-
-            // Salva a URL para auto-carregar na próxima sessão
-            getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
-                .edit().putString("url", url).apply()
-
-            listaCompleta = items
-            mostrarCategorias()
-
-            val canais = items.count { superCategoria(it.group) == "CANAIS" }
-            val filmes = items.count { superCategoria(it.group) == "FILMES" }
-            val series = items.count { superCategoria(it.group) == "SÉRIES" }
-            Toast.makeText(this@MainActivity,
-                "📺 $canais canais  🎬 $filmes filmes  🎞 $series séries",
-                Toast.LENGTH_LONG).show()
+            val resultado = withContext(Dispatchers.IO) { parsearM3u(url) }
+            resultado.fold(
+                onSuccess = { items ->
+                    if (items.isEmpty()) {
+                        Toast.makeText(this@MainActivity,
+                            "Lista carregada mas sem canais encontrados", Toast.LENGTH_LONG).show()
+                        return@launch
+                    }
+                    getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
+                        .edit().putString("url", url).apply()
+                    listaCompleta = items
+                    mostrarCategorias()
+                    val canais = items.count { superCategoria(it.group) == "CANAIS" }
+                    val filmes = items.count { superCategoria(it.group) == "FILMES" }
+                    val series = items.count { superCategoria(it.group) == "SÉRIES" }
+                    Toast.makeText(this@MainActivity,
+                        "📺 $canais canais  🎬 $filmes filmes  🎞 $series séries",
+                        Toast.LENGTH_LONG).show()
+                },
+                onFailure = { e ->
+                    Toast.makeText(this@MainActivity,
+                        "Erro ao carregar lista: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            )
         }
     }
 
-    private fun parsearM3u(url: String): List<M3uEntry> = try {
-        val linhas = URL(url).readText(Charsets.UTF_8).lines()
-        val resultado = mutableListOf<M3uEntry>()
-        var titulo = ""
-        var grupo = "Outros"
-        val regexGroup = Regex("""group-title="([^"]*)"""")
-        for (linha in linhas) {
-            when {
-                linha.startsWith("#EXTINF") -> {
-                    titulo = linha.substringAfterLast(",").trim()
-                    grupo = regexGroup.find(linha)?.groupValues?.get(1)?.trim()
-                        ?.ifEmpty { "Outros" } ?: "Outros"
-                }
-                linha.startsWith("http") -> {
-                    resultado.add(M3uEntry(titulo.ifEmpty { "Item ${resultado.size + 1}" }, linha.trim(), grupo))
-                    titulo = ""
-                    grupo = "Outros"
+    private fun parsearM3u(url: String): Result<List<M3uEntry>> {
+        return try {
+            val conn = (URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                // User-Agent de VLC — aceito pela maioria dos provedores M3U
+                setRequestProperty("User-Agent", "VLC/3.0.18 LibVLC/3.0.18")
+                setRequestProperty("Accept", "*/*")
+                connectTimeout = 15_000
+                readTimeout    = 30_000
+                instanceFollowRedirects = true
+            }
+            val code = conn.responseCode
+            if (code !in 200..299) {
+                return Result.failure(Exception("Servidor retornou HTTP $code"))
+            }
+            val texto = conn.inputStream.bufferedReader(Charsets.UTF_8).readText()
+            if (!texto.contains("#EXTINF")) {
+                return Result.failure(Exception("URL não contém uma lista M3U válida"))
+            }
+            val resultado   = mutableListOf<M3uEntry>()
+            val regexGroup  = Regex("""group-title="([^"]*)"""")
+            val regexName   = Regex("""tvg-name="([^"]*)"""")
+            var titulo = ""
+            var grupo  = "Outros"
+            for (linha in texto.lines()) {
+                val l = linha.trim()
+                when {
+                    l.startsWith("#EXTINF") -> {
+                        val tvg = regexName.find(l)?.groupValues?.get(1)?.trim()
+                        titulo  = if (!tvg.isNullOrEmpty()) tvg
+                                  else l.substringAfterLast(",").trim()
+                        grupo   = regexGroup.find(l)?.groupValues?.get(1)?.trim()
+                                      ?.ifEmpty { "Outros" } ?: "Outros"
+                    }
+                    l.contains("://") && !l.startsWith("#") -> {
+                        resultado.add(M3uEntry(
+                            titulo.ifEmpty { "Item ${resultado.size + 1}" }, l, grupo))
+                        titulo = ""
+                        grupo  = "Outros"
+                    }
                 }
             }
+            Result.success(resultado)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
-        resultado
-    } catch (e: Exception) { emptyList() }
+    }
 
     private fun mostrarCategorias() {
         categoriaAtiva = null
