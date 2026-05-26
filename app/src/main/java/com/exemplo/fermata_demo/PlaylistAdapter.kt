@@ -6,7 +6,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-data class M3uEntry(val title: String, val url: String)
+data class M3uEntry(val title: String, val url: String, val group: String = "Outros")
 
 class PlaylistAdapter(
     private val items: List<M3uEntry>,
@@ -16,6 +16,7 @@ class PlaylistAdapter(
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
         val tvTitle: TextView = view.findViewById(R.id.tv_title)
         val tvUrl: TextView = view.findViewById(R.id.tv_url)
+        val tvGroup: TextView = view.findViewById(R.id.tv_group)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
@@ -25,6 +26,7 @@ class PlaylistAdapter(
         val item = items[position]
         holder.tvTitle.text = item.title
         holder.tvUrl.text = item.url
+        holder.tvGroup.text = item.group
         holder.itemView.setOnClickListener { onItemClick(item) }
     }
 
