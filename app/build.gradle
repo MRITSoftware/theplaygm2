@@ -23,14 +23,14 @@ android {
             applicationIdSuffix ".bloqueado"
             versionNameSuffix "-bloqueado"
             buildConfigField "boolean", "DESBLOQUEADO", "false"
-            resValue "string", "app_name", "Fermata BLOQUEADO"
+            resValue "string", "app_name", "GM2 Play BLOQUEADO"
         }
         desbloqueado {
             dimension "modo"
             applicationIdSuffix ".desbloqueado"
             versionNameSuffix "-desbloqueado"
             buildConfigField "boolean", "DESBLOQUEADO", "true"
-            resValue "string", "app_name", "Fermata DESBLOQUEADO"
+            resValue "string", "app_name", "GM2 Play"
         }
     }
 
