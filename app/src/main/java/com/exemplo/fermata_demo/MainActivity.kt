@@ -11,7 +11,7 @@ import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Rational
+import android.util.Rational
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.Menu
