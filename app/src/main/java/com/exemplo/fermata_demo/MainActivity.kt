@@ -214,45 +214,54 @@ class MainActivity : AppCompatActivity() {
                     AutoMediaService.atualizarNowPlaying(titulo, "YouTube")
                 }
 
-                // Detecta anúncio: acelera a 16x enquanto rola, restaura ao terminar
-                // Auto-ativa o som quando o vídeo principal começa
+                // Pula anúncios: detecta via .ad-showing (classe mais confiável do YouTube)
+                // Debounce de 800ms antes de resetar — cobre pausa entre dois anúncios consecutivos
                 view.evaluateJavascript("""
                     (function() {
                         if (window._gm2active) return;
                         window._gm2active = true;
                         var adAtivo = false;
+                        var timerFim = null;
+
                         function tick() {
                             ['.ytp-skip-ad-button','.ytp-ad-skip-button',
-                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button',
-                             'button.ytp-ad-skip-button-modern'
+                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
                             ].forEach(function(s){
-                                var b=document.querySelector(s);
-                                if(b && b.offsetParent!==null) b.click();
+                                var b = document.querySelector(s);
+                                if (b && b.offsetParent !== null) b.click();
                             });
-                            var banner=document.querySelector('.ytp-ad-overlay-close-button');
-                            if(banner) banner.click();
-                            var video=document.querySelector('video');
-                            if(!video) return;
-                            var temAd=!!(
-                                document.querySelector('.ytp-ad-player-overlay') ||
+                            var banner = document.querySelector('.ytp-ad-overlay-close-button');
+                            if (banner) banner.click();
+
+                            var video = document.querySelector('video');
+                            if (!video || video.readyState < 2) return;
+
+                            var temAd = !!(
                                 document.querySelector('.ad-showing') ||
-                                document.querySelector('.ytp-ad-module')
+                                document.querySelector('.ytp-ad-player-overlay')
                             );
-                            if(temAd && !adAtivo){
-                                adAtivo=true;
-                                video.muted=true;
-                                video.playbackRate=16;
-                            } else if(!temAd && adAtivo){
-                                adAtivo=false;
-                                video.playbackRate=1;
-                                video.muted=false;
+
+                            if (temAd && !adAtivo) {
+                                adAtivo = true;
+                                if (timerFim) { clearTimeout(timerFim); timerFim = null; }
+                                video.muted = true;
+                                video.playbackRate = 16;
+                            } else if (!temAd && adAtivo && !timerFim) {
+                                timerFim = setTimeout(function() {
+                                    adAtivo = false;
+                                    timerFim = null;
+                                    var v = document.querySelector('video');
+                                    if (v) { v.playbackRate = 1; v.muted = false; }
+                                }, 800);
                             }
-                            if(!temAd && video.muted && video.currentTime>1){
-                                video.muted=false;
+
+                            if (!adAtivo && video.muted && video.currentTime > 2) {
+                                video.muted = false;
                             }
                         }
+
                         tick();
-                        setInterval(tick,150);
+                        setInterval(tick, 200);
                     })();
                 """.trimIndent(), null)
             }
