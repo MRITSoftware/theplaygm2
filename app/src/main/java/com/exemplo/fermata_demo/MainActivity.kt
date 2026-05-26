@@ -132,9 +132,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun htmlBloqueado() = """
-        <html><body style='background:#1a1a2e;color:#fff;text-align:center;
+        <html><body style='background:#000000;color:#fff;text-align:center;
         padding:60px 30px;font-family:sans-serif;'>
-        <h2 style='color:#e94560;font-size:28px'>🔒 BLOQUEADO</h2>
+        <h2 style='color:#1e7fd4;font-size:28px'>&#128274; BLOQUEADO</h2>
         <p style='font-size:16px'>BuildConfig.DESBLOQUEADO = <b>false</b></p>
         <p style='color:#888;font-size:13px'>Este APK foi compilado no modo seguro.<br>
         Tente descobrir como reverter o bloqueio.</p>

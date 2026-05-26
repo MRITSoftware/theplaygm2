@@ -45,7 +45,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:padding="8dp"
-                    android:background="#1a1a2e">
+                    android:background="#111111">
 
                     <EditText
                         android:id="@+id/et_m3u_url"
@@ -67,7 +67,7 @@
                         android:layout_marginStart="8dp"
                         android:text="Carregar"
                         android:textSize="12sp"
-                        android:backgroundTint="#e94560"/>
+                        android:backgroundTint="#1e7fd4"/>
                 </LinearLayout>
 
                 <!-- Cabeçalho da categoria selecionada (visível apenas ao entrar em uma pasta) -->
@@ -77,7 +77,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="#16213e"
+                    android:background="#111111"
                     android:visibility="gone">
 
                     <ImageButton
@@ -120,7 +120,7 @@
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="10dp"
                     android:singleLine="true"
-                    android:background="#16213e"
+                    android:background="#111111"
                     android:visibility="gone"/>
 
                 <!-- Área principal: placeholder / lista de categorias / lista de canais -->
@@ -144,7 +144,7 @@
                         android:id="@+id/rv_categories"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="#0d0d1a"
+                        android:background="#0a0a0a"
                         android:visibility="gone"/>
 
                     <!-- Lista de canais dentro da categoria -->
@@ -152,7 +152,7 @@
                         android:id="@+id/rv_playlist"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:background="#0d0d1a"
+                        android:background="#0a0a0a"
                         android:visibility="gone"/>
                 </FrameLayout>
 
@@ -165,7 +165,7 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:visibility="gone"
-                android:background="#0d0d1a">
+                android:background="#0a0a0a">
 
                 <androidx.media3.ui.PlayerView
                     android:id="@+id/player_view_offline"
@@ -179,7 +179,7 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
                     android:padding="8dp"
-                    android:background="#1a1a2e">
+                    android:background="#111111">
 
                     <TextView
                         android:layout_width="0dp"
@@ -215,7 +215,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:background="#0d0d1a"
+                    android:background="#0a0a0a"
                     android:visibility="gone"/>
 
             </LinearLayout>
@@ -228,7 +228,7 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:orientation="horizontal"
-            android:background="#0f3460"
+            android:background="#111111"
             android:gravity="center_vertical"
             android:visibility="gone">
 
@@ -276,7 +276,7 @@
             android:id="@+id/bottom_nav"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1a1a2e"
+            android:background="#111111"
             app:menu="@menu/bottom_nav_menu"
             app:itemIconTint="@color/bottom_nav_colors"
             app:itemTextColor="@color/bottom_nav_colors"/>

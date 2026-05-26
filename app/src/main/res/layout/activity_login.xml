@@ -3,7 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0d0d1a"
+    android:background="#000000"
     android:fillViewport="true">
 
     <LinearLayout
@@ -13,37 +13,69 @@
         android:gravity="center_horizontal"
         android:padding="32dp">
 
-        <TextView
+        <ImageView
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginTop="56dp"
+            android:src="@drawable/ic_gm2_logo"
+            android:contentDescription="GM2 Play"/>
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="72dp"
-            android:text="GM2 Play"
-            android:textColor="#e94560"
-            android:textSize="36sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.05"/>
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GM"
+                android:textColor="#ffffff"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2"
+                android:textColor="#1e7fd4"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" Play"
+                android:textColor="#ffffff"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:fontFamily="sans-serif-condensed"/>
+
+        </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:text="Acesse com a conta fornecida pelo professor"
-            android:textColor="#666666"
+            android:textColor="#555555"
             android:textSize="13sp"
             android:gravity="center"/>
 
         <View
             android:layout_width="48dp"
             android:layout_height="2dp"
-            android:layout_marginTop="32dp"
-            android:layout_marginBottom="32dp"
-            android:background="#e94560"/>
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="28dp"
+            android:background="#1e7fd4"/>
 
         <EditText
             android:id="@+id/et_email"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="E-mail"
+            android:hint="Usuário ou e-mail"
             android:inputType="textEmailAddress"
             android:textColor="#ffffff"
             android:textColorHint="#555555"
@@ -75,7 +107,7 @@
             android:layout_marginTop="24dp"
             android:text="Entrar"
             android:textSize="15sp"
-            android:backgroundTint="#e94560"/>
+            android:backgroundTint="#1e7fd4"/>
 
         <ProgressBar
             android:id="@+id/progress_login"
@@ -83,14 +115,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:visibility="gone"
-            android:indeterminateTint="#e94560"/>
+            android:indeterminateTint="#1e7fd4"/>
 
         <TextView
             android:id="@+id/tv_error"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:textColor="#e94560"
+            android:textColor="#e05050"
             android:textSize="13sp"
             android:gravity="center"
             android:visibility="gone"/>

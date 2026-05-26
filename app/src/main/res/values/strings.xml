@@ -7,5 +7,5 @@
           • Flavor "desbloqueado" → "Fermata DESBLOQUEADO"
         Este valor só seria usado se o flavor não definir o resValue
     -->
-    <string name="app_name">Fermata Demo</string>
+    <string name="app_name">GM2 Play</string>
 </resources>

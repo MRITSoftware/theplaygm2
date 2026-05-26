@@ -86,29 +86,38 @@ class AutoMediaService : MediaBrowserServiceCompat() {
             val size = 512
             val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bmp)
-            canvas.drawColor(Color.parseColor("#1a1a2e"))
+            canvas.drawColor(Color.BLACK)
 
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 textAlign = Paint.Align.CENTER
                 typeface  = Typeface.DEFAULT_BOLD
             }
 
-            // Barra decorativa no topo
-            paint.color = Color.parseColor("#e94560")
-            canvas.drawRect(0f, 0f, size.toFloat(), 12f, paint)
+            // Anel azul externo
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 18f
+            paint.color = Color.parseColor("#1e7fd4")
+            canvas.drawCircle(size / 2f, size / 2f, 230f, paint)
 
-            // Texto "GM2" grande
-            paint.textSize = 200f
-            canvas.drawText("GM2", size / 2f, size / 2f + 70f, paint)
+            // Triângulo play
+            paint.style = Paint.Style.FILL
+            paint.color = Color.parseColor("#cccccc")
+            val path = android.graphics.Path().apply {
+                moveTo(size / 2f - 80f, size / 2f - 110f)
+                lineTo(size / 2f + 110f, size / 2f)
+                lineTo(size / 2f - 80f, size / 2f + 110f)
+                close()
+            }
+            canvas.drawPath(path, paint)
 
-            // Texto "Play" menor em branco
-            paint.color    = Color.WHITE
-            paint.textSize = 80f
-            canvas.drawText("Play", size / 2f, size / 2f + 165f, paint)
+            // Texto "GM" em branco
+            paint.textSize = 120f
+            paint.color = Color.WHITE
+            canvas.drawText("GM", size / 2f - 60f, size / 2f + 175f, paint)
 
-            // Barra decorativa na base
-            paint.color = Color.parseColor("#e94560")
-            canvas.drawRect(0f, (size - 12).toFloat(), size.toFloat(), size.toFloat(), paint)
+            // Texto "2" em azul
+            paint.color = Color.parseColor("#1e7fd4")
+            canvas.drawText("2", size / 2f + 100f, size / 2f + 175f, paint)
 
             return bmp
         }

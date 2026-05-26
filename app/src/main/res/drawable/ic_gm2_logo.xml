@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Círculo escuro preenchido -->
+    <path
+        android:fillColor="#181818"
+        android:pathData="M100,12 A88,88 0 0,1 188,100 A88,88 0 0,1 100,188 A88,88 0 0,1 12,100 A88,88 0 0,1 100,12 Z"/>
+
+    <!-- Anel azul externo -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#1e7fd4"
+        android:strokeWidth="9"
+        android:pathData="M100,5 A95,95 0 0,1 195,100 A95,95 0 0,1 100,195 A95,95 0 0,1 5,100 A95,95 0 0,1 100,5 Z"/>
+
+    <!-- Triângulo play -->
+    <path
+        android:fillColor="#d0d0d0"
+        android:pathData="M74,58 L140,100 L74,142 Z"/>
+
+</vector>

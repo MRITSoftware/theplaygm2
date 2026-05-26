@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!--
-        Tema principal do app
-        Parent "Theme.AppCompat.DayNight.NoActionBar":
-          • AppCompat = compatível com Android 5.0+
-          • DayNight  = adapta automaticamente ao modo claro/escuro do sistema
-          • NoActionBar = remove a barra de título (mais espaço para o WebView)
-    -->
     <style name="Theme.FermataDemo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorPrimaryDark">@color/purple_700</item>
-        <item name="colorAccent">@color/teal_200</item>
+        <item name="colorPrimary">@color/gm2_blue</item>
+        <item name="colorPrimaryDark">@color/gm2_blue_dark</item>
+        <item name="colorAccent">@color/gm2_blue</item>
+        <item name="android:windowBackground">@color/gm2_black</item>
+    </style>
+
+    <style name="Theme.FermataDemo.Splash" parent="Theme.FermataDemo">
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowBackground">@color/gm2_black</item>
     </style>
 </resources>

@@ -95,7 +95,18 @@ class LoginActivity : AppCompatActivity() {
     }
 
     // Autentica via Supabase REST — nenhuma dependência extra necessária
-    private fun autenticar(email: String, senha: String): Result<String> = try {
+    private fun autenticar(email: String, senha: String): Result<String> {
+        // Modo demonstração: enquanto o Supabase não está configurado, aceita admin/admin
+        if (SupabaseConfig.URL.contains("SEU-PROJETO")) {
+            return if (email == "admin" && senha == "admin")
+                Result.success("demo-token-local")
+            else
+                Result.failure(Exception("Modo demo ativo. Use: admin / admin"))
+        }
+        return autenticarSupabase(email, senha)
+    }
+
+    private fun autenticarSupabase(email: String, senha: String): Result<String> = try {
         val url = URL("${SupabaseConfig.URL}/auth/v1/token?grant_type=password")
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"
@@ -125,7 +136,12 @@ class LoginActivity : AppCompatActivity() {
     }
 
     // Registra acesso na tabela "acessos" do Supabase (cria a tabela no painel do Supabase)
-    private fun registrarAcesso(token: String) = try {
+    private fun registrarAcesso(token: String) {
+        if (token == "demo-token-local") return
+        registrarAcessoSupabase(token)
+    }
+
+    private fun registrarAcessoSupabase(token: String) = try {
         val email = getSharedPreferences("gm2_auth", Context.MODE_PRIVATE)
             .getString("email", "") ?: ""
 

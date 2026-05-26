@@ -19,15 +19,22 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc"/>
 
-        <!-- Tela de login: primeira coisa que abre ao instalar o app -->
+        <!-- Splash screen: primeira coisa que abre ao instalar o app -->
         <activity
-            android:name=".LoginActivity"
-            android:exported="true">
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FermataDemo.Splash"
+            android:noHistory="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Tela de login: aberta após o splash -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false"/>
 
         <!-- App principal: acessado somente após login válido -->
         <activity
