@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_youtube"
+        android:title="Youtube"
+        android:icon="@drawable/ic_youtube"/>
+    <item
+        android:id="@+id/nav_tv"
+        android:title="TV"
+        android:icon="@drawable/ic_tv"/>
+    <item
+        android:id="@+id/nav_offline"
+        android:title="Vídeos Offline"
+        android:icon="@drawable/ic_offline"/>
+</menu>

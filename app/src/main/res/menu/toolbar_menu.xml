@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_status"   android:title="Status"   android:showAsAction="never"/>
+    <item android:id="@+id/action_reverter" android:title="Reverter" android:showAsAction="never"/>
+    <item android:id="@+id/action_mirror"   android:title="Mirror"   android:showAsAction="never"/>
+</menu>

@@ -2,13 +2,18 @@ package com.exemplo.fermata_demo
 
 import android.Manifest
 import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Rational
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -17,9 +22,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -29,6 +36,7 @@ import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,10 +45,8 @@ import java.net.URL
 class MainActivity : AppCompatActivity() {
 
     private var desbloqueioAtivo = BuildConfig.DESBLOQUEADO
-    private val CAPTURA_TELA = 1001
     private lateinit var mediaProjectionManager: MediaProjectionManager
     private var player: ExoPlayer? = null
-    private var modoWebView = false
 
     private val selecionarVideo = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -57,6 +63,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
+
         if (!desbloqueioAtivo) {
             aplicarModoBloqueado()
             return
@@ -65,46 +73,61 @@ class MainActivity : AppCompatActivity() {
         inicializarPlayer()
         configurarWebView()
         configurarM3u()
-        configurarBotoes()
+        configurarNavegacao()
+        mostrarAba(R.id.nav_youtube)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.toolbar_menu, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        for (i in 0 until menu.size()) menu.getItem(i).isVisible = desbloqueioAtivo
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.action_status -> {
+            Toast.makeText(this, "DESBLOQUEADO | BuildConfig.DESBLOQUEADO = true", Toast.LENGTH_LONG).show()
+            true
+        }
+        R.id.action_reverter -> { reverter(); true }
+        R.id.action_mirror -> { ativarMirroring(); true }
+        else -> super.onOptionsItemSelected(item)
     }
 
     private fun aplicarModoBloqueado() {
-        findViewById<View>(R.id.layout_m3u).visibility = View.GONE
-        findViewById<View>(R.id.rv_playlist).visibility = View.GONE
+        supportActionBar?.subtitle = "BLOQUEADO"
+        invalidateOptionsMenu()
 
-        val webView = findViewById<WebView>(R.id.webview)
-        webView.visibility = View.VISIBLE
-        webView.loadDataWithBaseURL(null, htmlBloqueado(), "text/html", "UTF-8", null)
+        findViewById<View>(R.id.bottom_nav).visibility = View.GONE
+        findViewById<View>(R.id.layout_tv).visibility = View.GONE
+        findViewById<View>(R.id.layout_offline).visibility = View.GONE
 
-        listOf(R.id.btn_modo, R.id.btn_reverter, R.id.btn_mirror).forEach {
-            findViewById<Button>(it).isEnabled = false
-        }
-
-        findViewById<Button>(R.id.btn_status).setOnClickListener {
-            Toast.makeText(this, "BLOQUEADO | BuildConfig.DESBLOQUEADO = false", Toast.LENGTH_LONG).show()
-        }
+        val webview = findViewById<WebView>(R.id.webview)
+        webview.visibility = View.VISIBLE
+        webview.loadDataWithBaseURL(null, htmlBloqueado(), "text/html", "UTF-8", null)
     }
 
     private fun htmlBloqueado() = """
         <html><body style='background:#1a1a2e;color:#fff;text-align:center;
-        padding:40px;font-family:sans-serif;'>
-        <h2 style='color:#e94560'>🔒 BLOQUEADO</h2>
-        <p>BuildConfig.DESBLOQUEADO = <b>false</b></p>
-        <p>Este APK foi compilado no modo seguro.</p>
+        padding:60px 30px;font-family:sans-serif;'>
+        <h2 style='color:#e94560;font-size:28px'>🔒 BLOQUEADO</h2>
+        <p style='font-size:16px'>BuildConfig.DESBLOQUEADO = <b>false</b></p>
+        <p style='color:#888;font-size:13px'>Este APK foi compilado no modo seguro.<br>
+        Tente descobrir como reverter o bloqueio.</p>
         </body></html>
     """.trimIndent()
 
     private fun inicializarPlayer() {
-        player = ExoPlayer.Builder(this).build().also { exo ->
-            exo.addListener(object : Player.Listener {
+        player = ExoPlayer.Builder(this).build().also {
+            it.addListener(object : Player.Listener {
                 override fun onPlayerError(error: PlaybackException) {
-                    Toast.makeText(this@MainActivity, "Erro de reprodução: ${error.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "Erro: ${error.message}", Toast.LENGTH_LONG).show()
                 }
             })
         }
-        val playerView = findViewById<PlayerView>(R.id.player_view)
-        playerView.player = player
-        playerView.visibility = View.VISIBLE
     }
 
     private fun configurarWebView() {
@@ -117,28 +140,18 @@ class MainActivity : AppCompatActivity() {
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
-                val permitidos = listOf(
-                    "https://m.youtube.com",
-                    "https://www.youtube.com",
-                    "https://youtu.be",
-                    "https://accounts.google.com"
-                )
+                val permitidos = listOf("https://m.youtube.com", "https://www.youtube.com",
+                    "https://youtu.be", "https://accounts.google.com")
                 return !permitidos.any { url.startsWith(it) }
             }
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 val url = request.url.toString()
-                val dominiosAnuncio = listOf(
-                    "doubleclick.net",
-                    "googlesyndication.com",
-                    "googletagservices.com",
-                    "googleadservices.com",
-                    "google-analytics.com",
-                    "pagead2.googlesyndication.com"
-                )
-                if (dominiosAnuncio.any { url.contains(it) }) {
+                val bloqueados = listOf("doubleclick.net", "googlesyndication.com",
+                    "googletagservices.com", "googleadservices.com",
+                    "google-analytics.com", "pagead2.googlesyndication.com")
+                if (bloqueados.any { url.contains(it) })
                     return WebResourceResponse("text/plain", "UTF-8", null)
-                }
                 return super.shouldInterceptRequest(view, request)
             }
 
@@ -147,13 +160,12 @@ class MainActivity : AppCompatActivity() {
                 view.evaluateJavascript("""
                     (function() {
                         setInterval(function() {
-                            var pular = document.querySelector(
-                                '.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern'
+                            var s = document.querySelector(
+                                '.ytp-skip-ad-button,.ytp-ad-skip-button,.ytp-ad-skip-button-modern'
                             );
-                            if (pular) pular.click();
-
-                            var fechar = document.querySelector('.ytp-ad-overlay-close-button');
-                            if (fechar) fechar.click();
+                            if (s) s.click();
+                            var c = document.querySelector('.ytp-ad-overlay-close-button');
+                            if (c) c.click();
                         }, 300);
                     })();
                 """.trimIndent(), null)
@@ -178,24 +190,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun carregarLista(url: String, recycler: RecyclerView) {
-        val btnCarregar = findViewById<Button>(R.id.btn_carregar)
-        btnCarregar.isEnabled = false
-        btnCarregar.text = "Carregando…"
+        val btn = findViewById<Button>(R.id.btn_carregar)
+        btn.isEnabled = false
+        btn.text = "Carregando…"
 
         lifecycleScope.launch {
-            val entradas = withContext(Dispatchers.IO) { parsearM3u(url) }
+            val items = withContext(Dispatchers.IO) { parsearM3u(url) }
+            btn.isEnabled = true
+            btn.text = "Carregar"
 
-            btnCarregar.isEnabled = true
-            btnCarregar.text = "Carregar"
-
-            if (entradas.isEmpty()) {
+            if (items.isEmpty()) {
                 Toast.makeText(this@MainActivity, "Lista vazia ou URL inválida", Toast.LENGTH_LONG).show()
                 return@launch
             }
 
+            findViewById<View>(R.id.tv_placeholder_tv).visibility = View.GONE
             recycler.visibility = View.VISIBLE
-            recycler.adapter = PlaylistAdapter(entradas) { reproduzir(it) }
-            Toast.makeText(this@MainActivity, "${entradas.size} item(s) carregado(s)", Toast.LENGTH_SHORT).show()
+            recycler.adapter = PlaylistAdapter(items) { reproduzirTV(it) }
+            Toast.makeText(this@MainActivity, "${items.size} item(s) carregado(s)", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -215,49 +227,62 @@ class MainActivity : AppCompatActivity() {
         resultado
     } catch (e: Exception) { emptyList() }
 
-    private fun reproduzir(entrada: M3uEntry) {
-        if (modoWebView) ativarModoPlayer()
-        player?.run {
-            setMediaItem(MediaItem.fromUri(entrada.url))
-            prepare()
-            play()
+    private fun configurarNavegacao() {
+        findViewById<BottomNavigationView>(R.id.bottom_nav)
+            .setOnItemSelectedListener { item -> mostrarAba(item.itemId); true }
+    }
+
+    private fun mostrarAba(itemId: Int) {
+        val webview = findViewById<WebView>(R.id.webview)
+        val layoutTv = findViewById<View>(R.id.layout_tv)
+        val layoutOffline = findViewById<View>(R.id.layout_offline)
+        val pvTV = findViewById<PlayerView>(R.id.player_view_tv)
+        val pvOffline = findViewById<PlayerView>(R.id.player_view_offline)
+
+        webview.visibility = View.GONE
+        layoutTv.visibility = View.GONE
+        layoutOffline.visibility = View.GONE
+        pvTV.player = null
+        pvOffline.player = null
+
+        when (itemId) {
+            R.id.nav_youtube -> {
+                webview.visibility = View.VISIBLE
+                if (webview.url.isNullOrEmpty() || webview.url == "about:blank")
+                    webview.loadUrl("https://m.youtube.com")
+                supportActionBar?.title = "GM2 Play — Youtube"
+            }
+            R.id.nav_tv -> {
+                layoutTv.visibility = View.VISIBLE
+                pvTV.player = player
+                supportActionBar?.title = "GM2 Play — TV"
+            }
+            R.id.nav_offline -> {
+                layoutOffline.visibility = View.VISIBLE
+                pvOffline.player = player
+                supportActionBar?.title = "GM2 Play — Vídeos Offline"
+                findViewById<Button>(R.id.btn_local).setOnClickListener { abrirVideoLocal() }
+            }
         }
+    }
+
+    private fun reproduzirTV(entrada: M3uEntry) {
+        player?.run { setMediaItem(MediaItem.fromUri(entrada.url)); prepare(); play() }
         Toast.makeText(this, "▶ ${entrada.title}", Toast.LENGTH_SHORT).show()
     }
 
-    private fun configurarBotoes() {
-        findViewById<Button>(R.id.btn_status).setOnClickListener {
-            Toast.makeText(this, "DESBLOQUEADO | BuildConfig.DESBLOQUEADO = true", Toast.LENGTH_LONG).show()
-        }
-
-        findViewById<Button>(R.id.btn_modo).setOnClickListener {
-            if (modoWebView) ativarModoPlayer() else ativarModoWebView()
-        }
-
-        findViewById<Button>(R.id.btn_reverter).setOnClickListener { reverter() }
-
-        findViewById<Button>(R.id.btn_mirror).setOnClickListener { ativarMirroring() }
-
-        findViewById<Button>(R.id.btn_local).setOnClickListener { abrirVideoLocal() }
+    private fun reproduzirLocal(uri: Uri) {
+        player?.run { setMediaItem(MediaItem.fromUri(uri)); prepare(); play() }
+        Toast.makeText(this, "▶ Vídeo local", Toast.LENGTH_SHORT).show()
     }
 
-    private fun ativarModoWebView() {
-        modoWebView = true
-        player?.pause()
-        findViewById<PlayerView>(R.id.player_view).visibility = View.GONE
-        val webView = findViewById<WebView>(R.id.webview)
-        webView.visibility = View.VISIBLE
-        if (webView.url.isNullOrEmpty() || webView.url == "about:blank") {
-            webView.loadUrl("https://m.youtube.com")
-        }
-        findViewById<Button>(R.id.btn_modo).text = "Player"
-    }
-
-    private fun ativarModoPlayer() {
-        modoWebView = false
-        findViewById<PlayerView>(R.id.player_view).visibility = View.VISIBLE
-        findViewById<WebView>(R.id.webview).visibility = View.GONE
-        findViewById<Button>(R.id.btn_modo).text = "WebView"
+    private fun abrirVideoLocal() {
+        val permissao = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_VIDEO else Manifest.permission.READ_EXTERNAL_STORAGE
+        if (checkSelfPermission(permissao) == PackageManager.PERMISSION_GRANTED)
+            selecionarVideo.launch("video/*")
+        else
+            pedirPermissao.launch(permissao)
     }
 
     private fun reverter() {
@@ -270,43 +295,42 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "✅ Revertido para modo bloqueado", Toast.LENGTH_LONG).show()
     }
 
-    private fun abrirVideoLocal() {
-        val permissao = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            Manifest.permission.READ_MEDIA_VIDEO
-        else
-            Manifest.permission.READ_EXTERNAL_STORAGE
-
-        if (checkSelfPermission(permissao) == PackageManager.PERMISSION_GRANTED) {
-            selecionarVideo.launch("video/*")
-        } else {
-            pedirPermissao.launch(permissao)
-        }
-    }
-
-    private fun reproduzirLocal(uri: Uri) {
-        if (modoWebView) ativarModoPlayer()
-        player?.run {
-            setMediaItem(MediaItem.fromUri(uri))
-            prepare()
-            play()
-        }
-        Toast.makeText(this, "▶ Vídeo local", Toast.LENGTH_SHORT).show()
-    }
-
     private fun ativarMirroring() {
         mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), CAPTURA_TELA)
+        startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), 1001)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (player?.isPlaying == true) {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .build()
+            enterPictureInPictureMode(params)
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPiP: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPiP, newConfig)
+        val visibilidade = if (isInPiP) View.GONE else View.VISIBLE
+        findViewById<View>(R.id.toolbar).visibility = visibilidade
+        findViewById<View>(R.id.bottom_nav).visibility = visibilidade
+        findViewById<View>(R.id.layout_m3u).visibility = visibilidade
+        findViewById<View>(R.id.btn_local).visibility = visibilidade
+
+        if (!isInPiP) {
+            val recycler = findViewById<RecyclerView>(R.id.rv_playlist)
+            if (recycler.adapter != null) recycler.visibility = View.VISIBLE
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == CAPTURA_TELA) {
-            Toast.makeText(
-                this,
-                if (resultCode == Activity.RESULT_OK) "📱 Espelhamento autorizado" else "❌ Espelhamento negado",
-                Toast.LENGTH_LONG
-            ).show()
-        }
+        if (requestCode == 1001)
+            Toast.makeText(this,
+                if (resultCode == Activity.RESULT_OK) "📱 Espelhamento autorizado"
+                else "❌ Espelhamento negado",
+                Toast.LENGTH_LONG).show()
     }
 
     override fun onDestroy() {

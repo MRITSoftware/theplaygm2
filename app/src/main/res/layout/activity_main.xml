@@ -1,125 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#1a1a2e">
+    android:background="#000000">
 
-    <FrameLayout
+    <!-- Toolbar com título e menu de opções (⋮) -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
         android:layout_width="match_parent"
-        android:layout_height="220dp">
+        android:layout_height="?attr/actionBarSize"
+        android:background="#1a1a2e"
+        android:elevation="4dp"
+        app:title="GM2 Play"
+        app:titleTextColor="#ffffff"
+        app:subtitleTextColor="#e94560"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"/>
 
-        <androidx.media3.ui.PlayerView
-            android:id="@+id/player_view"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"/>
+    <!-- Área de conteúdo principal — alterna entre as 3 abas -->
+    <FrameLayout
+        android:id="@+id/content_frame"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
+        <!-- ABA YOUTUBE: WebView em tela cheia -->
         <WebView
             android:id="@+id/webview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="gone"/>
 
+        <!-- ABA TV: Player + campo M3U + playlist -->
+        <LinearLayout
+            android:id="@+id/layout_tv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/player_view_tv"
+                android:layout_width="match_parent"
+                android:layout_height="220dp"
+                android:background="#000000"/>
+
+            <LinearLayout
+                android:id="@+id/layout_m3u"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="8dp"
+                android:background="#1a1a2e">
+
+                <EditText
+                    android:id="@+id/et_m3u_url"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="URL da lista M3U"
+                    android:inputType="textUri"
+                    android:textColor="#ffffff"
+                    android:textColorHint="#666666"
+                    android:backgroundTint="#444444"
+                    android:paddingStart="8dp"
+                    android:singleLine="true"/>
+
+                <Button
+                    android:id="@+id/btn_carregar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Carregar"
+                    android:textSize="12sp"
+                    android:backgroundTint="#e94560"/>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_playlist"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#0d0d1a"
+                android:visibility="gone"/>
+
+            <!-- Placeholder quando a lista ainda não foi carregada -->
+            <TextView
+                android:id="@+id/tv_placeholder_tv"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="Cole a URL da lista M3U acima e toque em Carregar"
+                android:textColor="#555555"
+                android:textSize="14sp"
+                android:padding="32dp"/>
+
+        </LinearLayout>
+
+        <!-- ABA VÍDEOS OFFLINE: Player + botão de seleção -->
+        <LinearLayout
+            android:id="@+id/layout_offline"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="#0d0d1a">
+
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/player_view_offline"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#000000"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Selecione um vídeo salvo no seu dispositivo para reproduzir offline"
+                android:textColor="#888888"
+                android:textSize="13sp"
+                android:gravity="center"
+                android:paddingTop="16dp"
+                android:paddingHorizontal="24dp"/>
+
+            <Button
+                android:id="@+id/btn_local"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_margin="16dp"
+                android:text="Selecionar Vídeo do Dispositivo"
+                android:textSize="14sp"
+                android:backgroundTint="#1a6b3c"/>
+        </LinearLayout>
+
     </FrameLayout>
 
-    <LinearLayout
-        android:id="@+id/layout_m3u"
+    <!-- Navegação inferior com as 3 abas -->
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:gravity="center_vertical">
-
-        <EditText
-            android:id="@+id/et_m3u_url"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="URL da lista M3U"
-            android:inputType="textUri"
-            android:textColor="#ffffff"
-            android:textColorHint="#888888"
-            android:backgroundTint="#444444"
-            android:paddingStart="8dp"
-            android:singleLine="true"/>
-
-        <Button
-            android:id="@+id/btn_carregar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:text="Carregar"
-            android:textSize="12sp"
-            android:backgroundTint="#e94560"/>
-
-    </LinearLayout>
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_playlist"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone"/>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="6dp"
-        android:background="#0f3460">
-
-        <Button
-            android:id="@+id/btn_status"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="3dp"
-            android:text="Status"
-            android:textSize="10sp"
-            android:backgroundTint="#533483"/>
-
-        <Button
-            android:id="@+id/btn_modo"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="3dp"
-            android:text="WebView"
-            android:textSize="10sp"
-            android:backgroundTint="#16213e"/>
-
-        <Button
-            android:id="@+id/btn_reverter"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="3dp"
-            android:text="Reverter"
-            android:textSize="10sp"
-            android:backgroundTint="#e94560"/>
-
-        <Button
-            android:id="@+id/btn_mirror"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="3dp"
-            android:text="Mirror"
-            android:textSize="10sp"
-            android:backgroundTint="#0f3460"/>
-
-        <Button
-            android:id="@+id/btn_local"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:layout_margin="3dp"
-            android:text="Local"
-            android:textSize="10sp"
-            android:backgroundTint="#1a6b3c"/>
-
-    </LinearLayout>
+        android:background="#1a1a2e"
+        app:menu="@menu/bottom_nav_menu"
+        app:itemIconTint="@color/bottom_nav_colors"
+        app:itemTextColor="@color/bottom_nav_colors"/>
 
 </LinearLayout>
