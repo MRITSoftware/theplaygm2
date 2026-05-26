@@ -1,28 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    AndroidManifest.xml — "Contrato" do app com o sistema Android
-    Define permissões, componentes (Activities) e configurações globais.
--->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-        PERMISSÃO: Acesso à internet
-        Necessária para o WebView carregar m.youtube.com
-        Sem essa permissão, o WebView ficaria em branco silenciosamente
-    -->
     <uses-permission android:name="android.permission.INTERNET"/>
-
-    <!--
-        PERMISSÃO: Verificar estado da conexão de rede
-        Usada para checar se há internet antes de tentar carregar o YouTube
-    -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
-    <!--
-        android:usesCleartextTraffic="false" — bloqueia HTTP não criptografado (força HTTPS)
-        youtube.com já usa HTTPS, então isso não afeta a demo.
-        É uma boa prática de segurança — impede vazamento de dados em redes abertas.
-    -->
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -30,21 +11,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FermataDemo"
-        android:usesCleartextTraffic="false">
+        android:networkSecurityConfig="@xml/network_security_config">
 
-        <!--
-            Activity principal: tela que o usuário vê ao abrir o app
-            android:exported="true" = pode ser iniciada de fora do app (pelo launcher)
-        -->
         <activity
             android:name=".MainActivity"
             android:exported="true">
-
-            <!--
-                Intent Filter: define como o sistema encontra esta Activity
-                MAIN = ponto de entrada principal do app
-                LAUNCHER = aparece na gaveta de apps do celular
-            -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>

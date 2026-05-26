@@ -1,15 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Layout da tela principal (activity_main.xml)
-
-    Estrutura:
-    LinearLayout vertical (ocupa a tela toda)
-    ├── WebView          — exibe YouTube ou a tela de bloqueio (peso=1, expande)
-    └── LinearLayout     — barra horizontal com os 3 botões de controle
-        ├── Botão Status
-        ├── Botão Reverter
-        └── Botão Mirror
--->
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -17,76 +6,109 @@
     android:orientation="vertical"
     android:background="#1a1a2e">
 
-    <!--
-        WebView: o componente central da demonstração
-        É aqui que o YouTube carrega (APK desbloqueado)
-        ou a tela de bloqueio HTML é exibida (APK bloqueado)
-
-        layout_weight="1" = expande para preencher todo o espaço disponível
-        acima dos botões
-    -->
-    <WebView
-        android:id="@+id/webview_youtube"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_height="220dp">
 
-    <!--
-        Barra de botões na parte inferior da tela
-        orientation="horizontal" = botões lado a lado
-        background="#0f3460" = azul escuro para contraste com o WebView
-    -->
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
+
+        <WebView
+            android:id="@+id/webview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"/>
+
+    </FrameLayout>
+
     <LinearLayout
+        android:id="@+id/layout_m3u"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="8dp"
-        android:background="#0f3460">
+        android:gravity="center_vertical">
 
-        <!--
-            Botão 1: Verificar status
-            Chama btnVerificarStatus.setOnClickListener em MainActivity.kt
-            layout_weight="1" = divide o espaço horizontal igualmente entre os 3 botões
-        -->
-        <Button
-            android:id="@+id/btn_verificar_status"
+        <EditText
+            android:id="@+id/et_m3u_url"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="4dp"
-            android:text="Status"
-            android:textSize="11sp"
+            android:hint="URL da lista M3U"
+            android:inputType="textUri"
+            android:textColor="#ffffff"
+            android:textColorHint="#888888"
+            android:backgroundTint="#444444"
+            android:paddingStart="8dp"
+            android:singleLine="true"/>
+
+        <Button
+            android:id="@+id/btn_carregar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Carregar"
+            android:textSize="12sp"
             android:backgroundTint="#e94560"/>
 
-        <!--
-            Botão 2: Reverter desbloqueio
-            Chama reverterDesbloqueio() → limpa cache e aplica bloqueio
-            Demonstra como desfazer o bypass (mitigação)
-        -->
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rv_playlist"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:visibility="gone"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="6dp"
+        android:background="#0f3460">
+
+        <Button
+            android:id="@+id/btn_status"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
+            android:text="Status"
+            android:textSize="10sp"
+            android:backgroundTint="#533483"/>
+
+        <Button
+            android:id="@+id/btn_modo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
+            android:text="WebView"
+            android:textSize="10sp"
+            android:backgroundTint="#16213e"/>
+
         <Button
             android:id="@+id/btn_reverter"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="4dp"
+            android:layout_margin="3dp"
             android:text="Reverter"
-            android:textSize="11sp"
-            android:backgroundTint="#16213e"/>
+            android:textSize="10sp"
+            android:backgroundTint="#e94560"/>
 
-        <!--
-            Botão 3: Ativar espelhamento de tela
-            Chama ativarEspelhamentoTela() → exibe popup de permissão do Android
-            Demonstra o segundo método de bypass do Fermata
-        -->
         <Button
             android:id="@+id/btn_mirror"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_margin="4dp"
+            android:layout_margin="3dp"
             android:text="Mirror"
-            android:textSize="11sp"
-            android:backgroundTint="#533483"/>
+            android:textSize="10sp"
+            android:backgroundTint="#0f3460"/>
 
     </LinearLayout>
 
