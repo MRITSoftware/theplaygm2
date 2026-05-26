@@ -1,12 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Ícone adaptativo (Adaptive Icon) — requer Android 8.0+ (API 26)
-    O sistema combina fundo + frente e recorta no formato que preferir
-    (círculo, arredondado, squircle, etc.) de acordo com o launcher do celular
--->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Camada de fundo: retângulo azul escuro -->
-    <background android:drawable="@drawable/ic_launcher_background"/>
-    <!-- Camada de frente: cadeado vermelho centralizado -->
-    <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+    <background android:drawable="@color/gm2_black"/>
+    <foreground android:drawable="@drawable/ic_launcher_logo"/>
 </adaptive-icon>

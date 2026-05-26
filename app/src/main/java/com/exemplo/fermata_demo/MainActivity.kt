@@ -206,35 +206,45 @@ class MainActivity : AppCompatActivity() {
                     AutoMediaService.atualizarNowPlaying(titulo, "YouTube")
                 }
 
-                // Detecta anúncio: acelera a 32x enquanto rola, restaura ao terminar
+                // Detecta anúncio: acelera a 16x enquanto rola, restaura ao terminar
+                // Auto-ativa o som quando o vídeo principal começa
                 view.evaluateJavascript("""
                     (function() {
                         if (window._gm2active) return;
                         window._gm2active = true;
-                        var adRolando = false;
+                        var adAtivo = false;
                         function tick() {
                             ['.ytp-skip-ad-button','.ytp-ad-skip-button',
-                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
+                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button',
+                             'button.ytp-ad-skip-button-modern'
                             ].forEach(function(s){
-                                var b=document.querySelector(s); if(b) b.click();
+                                var b=document.querySelector(s);
+                                if(b && b.offsetParent!==null) b.click();
                             });
-                            var overlay=document.querySelector('.ytp-ad-overlay-close-button');
-                            if(overlay) overlay.click();
+                            var banner=document.querySelector('.ytp-ad-overlay-close-button');
+                            if(banner) banner.click();
                             var video=document.querySelector('video');
                             if(!video) return;
-                            var temAd=!!(document.querySelector('.ytp-ad-player-overlay,.ytp-ad-module'));
-                            if(temAd && !adRolando){
-                                adRolando=true;
+                            var temAd=!!(
+                                document.querySelector('.ytp-ad-player-overlay') ||
+                                document.querySelector('.ad-showing') ||
+                                document.querySelector('.ytp-ad-module')
+                            );
+                            if(temAd && !adAtivo){
+                                adAtivo=true;
                                 video.muted=true;
-                                video.playbackRate=32;
-                            } else if(!temAd && adRolando){
-                                adRolando=false;
+                                video.playbackRate=16;
+                            } else if(!temAd && adAtivo){
+                                adAtivo=false;
                                 video.playbackRate=1;
+                                video.muted=false;
+                            }
+                            if(!temAd && video.muted && video.currentTime>1){
                                 video.muted=false;
                             }
                         }
                         tick();
-                        setInterval(tick,300);
+                        setInterval(tick,150);
                     })();
                 """.trimIndent(), null)
             }
