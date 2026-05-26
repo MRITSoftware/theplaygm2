@@ -193,10 +193,23 @@ class MainActivity : AppCompatActivity() {
 
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 val url = request.url.toString()
-                val bloqueados = listOf("doubleclick.net", "googlesyndication.com",
+                // Opção 1 — bloqueio por domínio (redes de anúncio de terceiros)
+                val dominiosBloqueados = listOf(
+                    "doubleclick.net", "googlesyndication.com",
                     "googletagservices.com", "googleadservices.com",
-                    "google-analytics.com", "pagead2.googlesyndication.com")
-                if (bloqueados.any { url.contains(it) })
+                    "google-analytics.com", "pagead2.googlesyndication.com",
+                    "ad.doubleclick.net", "static.doubleclick.net",
+                    "2mdn.net", "ads.youtube.com", "imasdk.googleapis.com"
+                )
+                // Opção 1 — bloqueio por caminho (endpoints de anúncio do próprio YouTube)
+                val caminhosBloqueados = listOf(
+                    "youtube.com/pagead",
+                    "youtube.com/api/stats/ads",
+                    "youtube.com/ad_data_204",
+                    "youtube.com/ptracking"
+                )
+                if (dominiosBloqueados.any { url.contains(it) } ||
+                    caminhosBloqueados.any { url.contains(it) })
                     return WebResourceResponse("text/plain", "UTF-8", null)
                 return super.shouldInterceptRequest(view, request)
             }
@@ -214,7 +227,7 @@ class MainActivity : AppCompatActivity() {
                     AutoMediaService.atualizarNowPlaying(titulo, "YouTube")
                 }
 
-                // Pula anúncios: detecta via .ad-showing (classe mais confiável do YouTube)
+                // Opção 2 — JS injetado no WebView para pular/remover anúncios no DOM
                 // Debounce de 800ms antes de resetar — cobre pausa entre dois anúncios consecutivos
                 view.evaluateJavascript("""
                     (function() {
@@ -224,26 +237,46 @@ class MainActivity : AppCompatActivity() {
                         var timerFim = null;
 
                         function tick() {
-                            ['.ytp-skip-ad-button','.ytp-ad-skip-button',
-                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
-                            ].forEach(function(s){
+                            // Clica em todos os botões de pular anúncio conhecidos
+                            ['.ytp-skip-ad-button', '.ytp-ad-skip-button',
+                             '.ytp-ad-skip-button-modern', '.ytp-ad-skip-button-slot button',
+                             '.ytp-skip-intro-button'
+                            ].forEach(function(s) {
                                 var b = document.querySelector(s);
                                 if (b && b.offsetParent !== null) b.click();
                             });
-                            var banner = document.querySelector('.ytp-ad-overlay-close-button');
-                            if (banner) banner.click();
+
+                            // Fecha banners e overlays de anúncio
+                            ['.ytp-ad-overlay-close-button', '.ytp-ad-overlay-close-container'
+                            ].forEach(function(s) {
+                                var b = document.querySelector(s);
+                                if (b) b.click();
+                            });
+
+                            // Remove elementos de overlay de anúncio do DOM (imagens, texto, interstitials)
+                            // .ytp-suggested-action foi excluído pois também cobre o botão Inscrever-se
+                            ['.ytp-ad-overlay-container', '.ytp-ad-text-overlay',
+                             '.ytp-ad-image-overlay', '.ytp-ad-action-interstitial',
+                             '.ytp-featured-product'
+                            ].forEach(function(s) {
+                                document.querySelectorAll(s).forEach(function(el) {
+                                    el.style.display = 'none';
+                                });
+                            });
 
                             var video = document.querySelector('video');
                             if (!video || video.readyState < 2) return;
 
                             var temAd = !!(
                                 document.querySelector('.ad-showing') ||
-                                document.querySelector('.ytp-ad-player-overlay')
+                                document.querySelector('.ytp-ad-player-overlay') ||
+                                document.querySelector('.ytp-ad-progress')
                             );
 
                             if (temAd && !adAtivo) {
                                 adAtivo = true;
                                 if (timerFim) { clearTimeout(timerFim); timerFim = null; }
+                                // Acelera a 16x e muta para o anúncio passar em ~2 segundos
                                 video.muted = true;
                                 video.playbackRate = 16;
                             } else if (!temAd && adAtivo && !timerFim) {
