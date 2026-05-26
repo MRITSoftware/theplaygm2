@@ -1,9 +1,13 @@
 package com.exemplo.fermata_demo
 
+import android.Manifest
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebChromeClient
@@ -14,6 +18,7 @@ import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
@@ -36,6 +41,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mediaProjectionManager: MediaProjectionManager
     private var player: ExoPlayer? = null
     private var modoWebView = false
+
+    private val selecionarVideo = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { reproduzirLocal(it) } }
+
+    private val pedirPermissao = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { concedida ->
+        if (concedida) selecionarVideo.launch("video/*")
+        else Toast.makeText(this, "Permissão negada para acessar vídeos", Toast.LENGTH_SHORT).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -221,6 +237,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btn_reverter).setOnClickListener { reverter() }
 
         findViewById<Button>(R.id.btn_mirror).setOnClickListener { ativarMirroring() }
+
+        findViewById<Button>(R.id.btn_local).setOnClickListener { abrirVideoLocal() }
     }
 
     private fun ativarModoWebView() {
@@ -250,6 +268,29 @@ class MainActivity : AppCompatActivity() {
         with(findViewById<WebView>(R.id.webview)) { clearCache(true); clearHistory() }
         aplicarModoBloqueado()
         Toast.makeText(this, "✅ Revertido para modo bloqueado", Toast.LENGTH_LONG).show()
+    }
+
+    private fun abrirVideoLocal() {
+        val permissao = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            Manifest.permission.READ_MEDIA_VIDEO
+        else
+            Manifest.permission.READ_EXTERNAL_STORAGE
+
+        if (checkSelfPermission(permissao) == PackageManager.PERMISSION_GRANTED) {
+            selecionarVideo.launch("video/*")
+        } else {
+            pedirPermissao.launch(permissao)
+        }
+    }
+
+    private fun reproduzirLocal(uri: Uri) {
+        if (modoWebView) ativarModoPlayer()
+        player?.run {
+            setMediaItem(MediaItem.fromUri(uri))
+            prepare()
+            play()
+        }
+        Toast.makeText(this, "▶ Vídeo local", Toast.LENGTH_SHORT).show()
     }
 
     private fun ativarMirroring() {

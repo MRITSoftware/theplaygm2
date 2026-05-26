@@ -110,6 +110,16 @@
             android:textSize="10sp"
             android:backgroundTint="#0f3460"/>
 
+        <Button
+            android:id="@+id/btn_local"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_margin="3dp"
+            android:text="Local"
+            android:textSize="10sp"
+            android:backgroundTint="#1a6b3c"/>
+
     </LinearLayout>
 
 </LinearLayout>
