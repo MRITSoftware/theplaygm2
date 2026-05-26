@@ -13,25 +13,8 @@ android {
         targetSdk 34
         versionCode 2
         versionName "2.0"
-    }
-
-    flavorDimensions += "modo"
-
-    productFlavors {
-        bloqueado {
-            dimension "modo"
-            applicationIdSuffix ".bloqueado"
-            versionNameSuffix "-bloqueado"
-            buildConfigField "boolean", "DESBLOQUEADO", "false"
-            resValue "string", "app_name", "GM2 Play BLOQUEADO"
-        }
-        desbloqueado {
-            dimension "modo"
-            applicationIdSuffix ".desbloqueado"
-            versionNameSuffix "-desbloqueado"
-            buildConfigField "boolean", "DESBLOQUEADO", "true"
-            resValue "string", "app_name", "GM2 Play"
-        }
+        buildConfigField "boolean", "DESBLOQUEADO", "true"
+        resValue "string", "app_name", "GM2 Play"
     }
 
     buildTypes {

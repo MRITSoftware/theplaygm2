@@ -1,4 +1,4 @@
-name: Build GM2 Play APKs
+name: Build GM2 Play APK
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Compilar APKs
+    name: Compilar APK
     runs-on: ubuntu-latest
 
     steps:
@@ -40,31 +40,17 @@ jobs:
       - name: Criar local.properties
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
-      - name: Build APK BLOQUEADO
-        run: gradle :app:assembleBloqueadoDebug
+      - name: Build APK
+        run: gradle :app:assembleDebug
 
-      - name: Build APK DESBLOQUEADO
-        run: gradle :app:assembleDesbloqueadoDebug
-
-      - name: Upload APK BLOQUEADO
+      - name: Upload APK GM2 Play
         uses: actions/upload-artifact@v4
         with:
-          name: GM2Play-BLOQUEADO
-          path: app/build/outputs/apk/bloqueado/debug/app-bloqueado-debug.apk
+          name: GM2Play
+          path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-      - name: Upload APK DESBLOQUEADO
-        uses: actions/upload-artifact@v4
-        with:
-          name: GM2Play-DESBLOQUEADO
-          path: app/build/outputs/apk/desbloqueado/debug/app-desbloqueado-debug.apk
-          retention-days: 30
-
-      - name: Resumo dos APKs gerados
+      - name: Resumo
         run: |
-          echo "## GM2 Play — APKs Gerados" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Artifact | BuildConfig.DESBLOQUEADO | Comportamento |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|--------------------------|---------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| GM2Play-BLOQUEADO | \`false\` | Exibe tela de bloqueio |" >> $GITHUB_STEP_SUMMARY
-          echo "| GM2Play-DESBLOQUEADO | \`true\` | App completo com YouTube/TV/Offline |" >> $GITHUB_STEP_SUMMARY
+          echo "## GM2 Play — APK Gerado" >> $GITHUB_STEP_SUMMARY
+          echo "Baixe o artifact **GM2Play** na seção Artifacts desta execução." >> $GITHUB_STEP_SUMMARY
