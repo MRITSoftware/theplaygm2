@@ -1,4 +1,4 @@
-﻿name: Build GM2 Play APK
+name: Build GM2 Play APK
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
 
     steps:
 
-      - name: Checkout do repositÃ³rio
+      - name: Checkout do repositório
         uses: actions/checkout@v4
 
       - name: Configurar JDK 17
@@ -28,7 +28,7 @@ jobs:
         with:
           gradle-version: '8.4'
 
-      - name: Aceitar licenÃ§as do Android SDK
+      - name: Aceitar licenças do Android SDK
         run: yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses > /dev/null 2>&1 || true
 
       - name: Instalar platform e build-tools Android 34
@@ -41,9 +41,9 @@ jobs:
         run: echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
 
       - name: Build APK
-        run: ./gradlew :app:assembleDebug
+        run: gradle :app:assembleDebug
 
-      - name: Upload APK Desbloqueado
+      - name: Upload APK GM2 Play
         uses: actions/upload-artifact@v4
         with:
           name: GM2Play-Desbloqueado
@@ -52,5 +52,5 @@ jobs:
 
       - name: Resumo
         run: |
-          echo "## GM2 Play â€” APK Gerado" >> $GITHUB_STEP_SUMMARY
-          echo "Baixe o artifact **GM2Play-Desbloqueado** na seÃ§Ã£o Artifacts desta execuÃ§Ã£o." >> $GITHUB_STEP_SUMMARY
+          echo "## GM2 Play — APK Gerado" >> $GITHUB_STEP_SUMMARY
+          echo "Baixe o artifact **GM2Play-Desbloqueado** na seção Artifacts desta execução." >> $GITHUB_STEP_SUMMARY
