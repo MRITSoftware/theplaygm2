@@ -107,6 +107,39 @@ class MainActivity : AppCompatActivity() {
                 )
                 return !permitidos.any { url.startsWith(it) }
             }
+
+            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                val url = request.url.toString()
+                val dominiosAnuncio = listOf(
+                    "doubleclick.net",
+                    "googlesyndication.com",
+                    "googletagservices.com",
+                    "googleadservices.com",
+                    "google-analytics.com",
+                    "pagead2.googlesyndication.com"
+                )
+                if (dominiosAnuncio.any { url.contains(it) }) {
+                    return WebResourceResponse("text/plain", "UTF-8", null)
+                }
+                return super.shouldInterceptRequest(view, request)
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                view.evaluateJavascript("""
+                    (function() {
+                        setInterval(function() {
+                            var pular = document.querySelector(
+                                '.ytp-skip-ad-button, .ytp-ad-skip-button, .ytp-ad-skip-button-modern'
+                            );
+                            if (pular) pular.click();
+
+                            var fechar = document.querySelector('.ytp-ad-overlay-close-button');
+                            if (fechar) fechar.click();
+                        }, 300);
+                    })();
+                """.trimIndent(), null)
+            }
         }
         webView.webChromeClient = WebChromeClient()
     }
