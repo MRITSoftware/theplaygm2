@@ -24,6 +24,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
@@ -46,6 +47,8 @@ import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import java.net.URL
 
 class MainActivity : AppCompatActivity() {
@@ -59,9 +62,15 @@ class MainActivity : AppCompatActivity() {
     private var termoBusca = ""
     private var listaCarregada = false
 
+    private var isFullscreen = false
+    private var fullscreenOriginPlayer: PlayerView? = null
+    private var fullscreenWebCallback: WebChromeClient.CustomViewCallback? = null
+
+    private val videoLibrary = mutableListOf<VideoEntry>()
+
     private val selecionarVideo = registerForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri -> uri?.let { reproduzirLocal(it) } }
+    ) { uri -> uri?.let { adicionarVideoNaBiblioteca(it) } }
 
     private val pedirPermissao = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -85,6 +94,9 @@ class MainActivity : AppCompatActivity() {
         configurarM3u()
         configurarNavegacao()
         configurarBotaoVoltar()
+        configurarFullscreenPlayers()
+        carregarBiblioteca()
+        configurarListaOffline()
         mostrarAba(R.id.nav_youtube)
     }
 
@@ -111,13 +123,19 @@ class MainActivity : AppCompatActivity() {
     private fun configurarBotaoVoltar() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                val webview = findViewById<WebView>(R.id.webview)
-                if (webview.visibility == View.VISIBLE && webview.canGoBack()) {
-                    webview.goBack()
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
-                    isEnabled = true
+                when {
+                    isFullscreen -> sairFullscreen()
+                    fullscreenWebCallback != null -> fullscreenWebCallback?.onCustomViewHidden()
+                    else -> {
+                        val webview = findViewById<WebView>(R.id.webview)
+                        if (webview.visibility == View.VISIBLE && webview.canGoBack()) {
+                            webview.goBack()
+                        } else {
+                            isEnabled = false
+                            onBackPressedDispatcher.onBackPressed()
+                            isEnabled = true
+                        }
+                    }
                 }
             }
         })
@@ -186,19 +204,47 @@ class MainActivity : AppCompatActivity() {
                 findViewById<TextView>(R.id.tv_web_url).text = Uri.parse(url).host ?: url
                 view.evaluateJavascript("""
                     (function() {
-                        setInterval(function() {
-                            var s = document.querySelector(
-                                '.ytp-skip-ad-button,.ytp-ad-skip-button,.ytp-ad-skip-button-modern'
-                            );
-                            if (s) s.click();
-                            var c = document.querySelector('.ytp-ad-overlay-close-button');
-                            if (c) c.click();
-                        }, 300);
+                        if (window._gm2active) return;
+                        window._gm2active = true;
+                        function pular() {
+                            ['.ytp-skip-ad-button','.ytp-ad-skip-button',
+                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
+                            ].forEach(function(s) {
+                                var b = document.querySelector(s);
+                                if (b) b.click();
+                            });
+                            var overlay = document.querySelector('.ytp-ad-overlay-close-button');
+                            if (overlay) overlay.click();
+                            var video = document.querySelector('video');
+                            if (video && document.querySelector('.ytp-ad-player-overlay')) {
+                                video.muted = true;
+                                video.playbackRate = 16;
+                            }
+                        }
+                        pular();
+                        setInterval(pular, 300);
                     })();
                 """.trimIndent(), null)
             }
         }
-        webView.webChromeClient = WebChromeClient()
+
+        webView.webChromeClient = object : WebChromeClient() {
+            override fun onShowCustomView(view: View, callback: CustomViewCallback) {
+                fullscreenWebCallback = callback
+                val overlay = findViewById<FrameLayout>(R.id.fullscreen_overlay)
+                overlay.addView(view)
+                overlay.visibility = View.VISIBLE
+                hideSystemUi()
+            }
+
+            override fun onHideCustomView() {
+                val overlay = findViewById<FrameLayout>(R.id.fullscreen_overlay)
+                overlay.removeAllViews()
+                overlay.visibility = View.GONE
+                fullscreenWebCallback = null
+                showSystemUi()
+            }
+        }
 
         findViewById<ImageButton>(R.id.btn_web_back).setOnClickListener {
             if (webView.canGoBack()) webView.goBack()
@@ -367,8 +413,139 @@ class MainActivity : AppCompatActivity() {
                 layoutOffline.visibility = View.VISIBLE
                 pvOffline.player = player
                 supportActionBar?.title = "GM2 Play — Vídeos Offline"
-                findViewById<Button>(R.id.btn_local).setOnClickListener { abrirVideoLocal() }
             }
+        }
+    }
+
+    private fun configurarListaOffline() {
+        val recycler = findViewById<RecyclerView>(R.id.rv_video_library)
+        recycler.layoutManager = LinearLayoutManager(this)
+        recycler.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        atualizarListaVideos()
+        findViewById<Button>(R.id.btn_add_video).setOnClickListener { abrirVideoLocal() }
+    }
+
+    private fun configurarFullscreenPlayers() {
+        val pvTV = findViewById<PlayerView>(R.id.player_view_tv)
+        val pvOffline = findViewById<PlayerView>(R.id.player_view_offline)
+        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
+
+        pvTV.setFullscreenButtonClickListener { entering ->
+            if (entering) entrarFullscreenPlayer(pvTV)
+        }
+        pvOffline.setFullscreenButtonClickListener { entering ->
+            if (entering) entrarFullscreenPlayer(pvOffline)
+        }
+        pvFs.setFullscreenButtonClickListener { entering ->
+            if (!entering) sairFullscreen()
+        }
+    }
+
+    private fun entrarFullscreenPlayer(origin: PlayerView) {
+        isFullscreen = true
+        fullscreenOriginPlayer = origin
+        origin.player = null
+        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
+        pvFs.player = player
+        findViewById<FrameLayout>(R.id.fullscreen_overlay).visibility = View.VISIBLE
+        hideSystemUi()
+    }
+
+    private fun sairFullscreen() {
+        isFullscreen = false
+        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
+        pvFs.player = null
+        fullscreenOriginPlayer?.player = player
+        fullscreenOriginPlayer = null
+        findViewById<FrameLayout>(R.id.fullscreen_overlay).visibility = View.GONE
+        showSystemUi()
+    }
+
+    private fun hideSystemUi() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.let {
+                it.hide(android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars())
+                it.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_FULLSCREEN or
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            )
+        }
+    }
+
+    private fun showSystemUi() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.insetsController?.show(
+                android.view.WindowInsets.Type.statusBars() or android.view.WindowInsets.Type.navigationBars()
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+        }
+    }
+
+    private fun carregarBiblioteca() {
+        val json = getSharedPreferences("gm2_biblioteca", Context.MODE_PRIVATE)
+            .getString("videos", "[]") ?: "[]"
+        videoLibrary.clear()
+        try {
+            val arr = JSONArray(json)
+            for (i in 0 until arr.length()) {
+                val obj = arr.getJSONObject(i)
+                videoLibrary.add(VideoEntry(obj.getString("title"), obj.getString("uri")))
+            }
+        } catch (e: Exception) { /* ignora dados corrompidos */ }
+    }
+
+    private fun salvarBiblioteca() {
+        val arr = JSONArray()
+        videoLibrary.forEach { arr.put(JSONObject().put("title", it.title).put("uri", it.uri)) }
+        getSharedPreferences("gm2_biblioteca", Context.MODE_PRIVATE)
+            .edit().putString("videos", arr.toString()).apply()
+    }
+
+    private fun adicionarVideoNaBiblioteca(uri: Uri) {
+        try {
+            contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        } catch (e: SecurityException) { /* URI não persistível, mas pode funcionar */ }
+
+        val nome = contentResolver.query(uri, arrayOf("_display_name"), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        } ?: uri.lastPathSegment ?: "Vídeo"
+
+        val entry = VideoEntry(nome, uri.toString())
+        if (videoLibrary.none { it.uri == entry.uri }) {
+            videoLibrary.add(0, entry)
+            salvarBiblioteca()
+            atualizarListaVideos()
+        }
+        reproduzirLocal(uri)
+    }
+
+    private fun removerVideoDaBiblioteca(entry: VideoEntry, position: Int) {
+        videoLibrary.removeAt(position)
+        salvarBiblioteca()
+        atualizarListaVideos()
+        Toast.makeText(this, "${entry.title} removido", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun atualizarListaVideos() {
+        val recycler = findViewById<RecyclerView>(R.id.rv_video_library)
+        val placeholder = findViewById<TextView>(R.id.tv_placeholder_offline)
+        if (videoLibrary.isEmpty()) {
+            placeholder.visibility = View.VISIBLE
+            recycler.visibility = View.GONE
+        } else {
+            placeholder.visibility = View.GONE
+            recycler.visibility = View.VISIBLE
+            recycler.adapter = VideoLibraryAdapter(videoLibrary,
+                onPlay = { reproduzirLocal(Uri.parse(it.uri)) },
+                onDelete = { entry, pos -> removerVideoDaBiblioteca(entry, pos) }
+            )
         }
     }
 
@@ -379,7 +556,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun reproduzirLocal(uri: Uri) {
         player?.run { setMediaItem(MediaItem.fromUri(uri)); prepare(); play() }
-        Toast.makeText(this, "▶ Vídeo local", Toast.LENGTH_SHORT).show()
     }
 
     private fun abrirVideoLocal() {
@@ -421,7 +597,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.bottom_nav).visibility = v
         findViewById<View>(R.id.layout_m3u).visibility = v
         findViewById<View>(R.id.layout_youtube_nav).visibility = v
-        findViewById<View>(R.id.btn_local).visibility = v
+        findViewById<View>(R.id.btn_add_video).visibility = v
         if (isInPiP) {
             findViewById<View>(R.id.layout_search_chips).visibility = View.GONE
         } else if (listaCarregada) {

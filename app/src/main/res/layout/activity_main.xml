@@ -1,240 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="#000000">
+    android:layout_height="match_parent">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/toolbar"
+    <!-- Conteúdo principal -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#1a1a2e"
-        android:elevation="4dp"
-        app:title="GM2 Play"
-        app:titleTextColor="#ffffff"
-        app:subtitleTextColor="#e94560"
-        app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"/>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="#000000">
 
-    <FrameLayout
-        android:id="@+id/content_frame"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <!-- ABA YOUTUBE -->
-        <WebView
-            android:id="@+id/webview"
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:visibility="gone"/>
+            android:layout_height="?attr/actionBarSize"
+            android:background="#1a1a2e"
+            android:elevation="4dp"
+            app:title="GM2 Play"
+            app:titleTextColor="#ffffff"
+            app:subtitleTextColor="#e94560"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"/>
 
-        <!-- ABA TV -->
-        <LinearLayout
-            android:id="@+id/layout_tv"
+        <FrameLayout
+            android:id="@+id/content_frame"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="gone">
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <androidx.media3.ui.PlayerView
-                android:id="@+id/player_view_tv"
+            <!-- ABA YOUTUBE -->
+            <WebView
+                android:id="@+id/webview"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
-                android:background="#000000"/>
+                android:layout_height="match_parent"
+                android:visibility="gone"/>
 
-            <!-- URL da lista M3U -->
+            <!-- ABA TV -->
             <LinearLayout
-                android:id="@+id/layout_m3u"
+                android:id="@+id/layout_tv"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="8dp"
-                android:background="#1a1a2e">
-
-                <EditText
-                    android:id="@+id/et_m3u_url"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="URL da lista M3U"
-                    android:inputType="textUri"
-                    android:textColor="#ffffff"
-                    android:textColorHint="#666666"
-                    android:backgroundTint="#444444"
-                    android:paddingStart="8dp"
-                    android:singleLine="true"/>
-
-                <Button
-                    android:id="@+id/btn_carregar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Carregar"
-                    android:textSize="12sp"
-                    android:backgroundTint="#e94560"/>
-            </LinearLayout>
-
-            <!-- Pesquisa + Categorias (aparece após carregar lista) -->
-            <LinearLayout
-                android:id="@+id/layout_search_chips"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:background="#16213e"
                 android:visibility="gone">
 
-                <EditText
-                    android:id="@+id/et_search"
+                <androidx.media3.ui.PlayerView
+                    android:id="@+id/player_view_tv"
+                    android:layout_width="match_parent"
+                    android:layout_height="200dp"
+                    android:background="#000000"/>
+
+                <LinearLayout
+                    android:id="@+id/layout_m3u"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="🔍  Pesquisar canal, filme ou série..."
-                    android:inputType="text"
-                    android:textColor="#ffffff"
-                    android:textColorHint="#666666"
-                    android:backgroundTint="#333333"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="10dp"
-                    android:singleLine="true"/>
+                    android:orientation="horizontal"
+                    android:padding="8dp"
+                    android:background="#1a1a2e">
 
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:paddingVertical="4dp">
+                    <EditText
+                        android:id="@+id/et_m3u_url"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="URL da lista M3U"
+                        android:inputType="textUri"
+                        android:textColor="#ffffff"
+                        android:textColorHint="#666666"
+                        android:backgroundTint="#444444"
+                        android:paddingStart="8dp"
+                        android:singleLine="true"/>
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chip_group_categories"
+                    <Button
+                        android:id="@+id/btn_carregar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingHorizontal="8dp"
-                        app:singleSelection="true"
-                        app:selectionRequired="true"/>
-                </HorizontalScrollView>
+                        android:layout_marginStart="8dp"
+                        android:text="Carregar"
+                        android:textSize="12sp"
+                        android:backgroundTint="#e94560"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/layout_search_chips"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="#16213e"
+                    android:visibility="gone">
+
+                    <EditText
+                        android:id="@+id/et_search"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="🔍  Pesquisar canal, filme ou série..."
+                        android:inputType="text"
+                        android:textColor="#ffffff"
+                        android:textColorHint="#666666"
+                        android:backgroundTint="#333333"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="10dp"
+                        android:singleLine="true"/>
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none"
+                        android:paddingVertical="4dp">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chip_group_categories"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingHorizontal="8dp"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"/>
+                    </HorizontalScrollView>
+                </LinearLayout>
+
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <TextView
+                        android:id="@+id/tv_placeholder_tv"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center"
+                        android:text="Cole a URL da lista M3U acima e toque em Carregar"
+                        android:textColor="#444444"
+                        android:textSize="14sp"
+                        android:padding="32dp"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_playlist"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#0d0d1a"
+                        android:visibility="gone"/>
+                </FrameLayout>
+
             </LinearLayout>
 
-            <!-- Área da lista ou placeholder -->
-            <FrameLayout
+            <!-- ABA VÍDEOS OFFLINE -->
+            <LinearLayout
+                android:id="@+id/layout_offline"
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1">
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="gone"
+                android:background="#0d0d1a">
+
+                <androidx.media3.ui.PlayerView
+                    android:id="@+id/player_view_offline"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:background="#000000"/>
+
+                <!-- Header da biblioteca -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="8dp"
+                    android:background="#1a1a2e">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Minha Biblioteca"
+                        android:textColor="#ffffff"
+                        android:textSize="14sp"
+                        android:textStyle="bold"/>
+
+                    <Button
+                        android:id="@+id/btn_add_video"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="+ Vídeo"
+                        android:textSize="12sp"
+                        android:backgroundTint="#1a6b3c"/>
+                </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tv_placeholder_tv"
+                    android:id="@+id/tv_placeholder_offline"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:gravity="center"
-                    android:text="Cole a URL da lista M3U acima e toque em Carregar"
+                    android:layout_height="wrap_content"
+                    android:text="Toque em + Vídeo para adicionar vídeos salvos no dispositivo"
                     android:textColor="#444444"
-                    android:textSize="14sp"
-                    android:padding="32dp"/>
+                    android:textSize="13sp"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:visibility="gone"/>
 
                 <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rv_playlist"
+                    android:id="@+id/rv_video_library"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
                     android:background="#0d0d1a"
                     android:visibility="gone"/>
-            </FrameLayout>
 
-        </LinearLayout>
+            </LinearLayout>
 
-        <!-- ABA VÍDEOS OFFLINE -->
+        </FrameLayout>
+
+        <!-- Barra de navegação do YouTube -->
         <LinearLayout
-            android:id="@+id/layout_offline"
+            android:id="@+id/layout_youtube_nav"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:visibility="gone"
-            android:background="#0d0d1a">
+            android:layout_height="48dp"
+            android:orientation="horizontal"
+            android:background="#0f3460"
+            android:gravity="center_vertical"
+            android:visibility="gone">
 
-            <androidx.media3.ui.PlayerView
-                android:id="@+id/player_view_offline"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:background="#000000"/>
+            <ImageButton
+                android:id="@+id/btn_web_back"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_arrow_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:alpha="0.3"
+                android:contentDescription="Voltar"/>
+
+            <ImageButton
+                android:id="@+id/btn_web_forward"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_arrow_forward"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:alpha="0.3"
+                android:contentDescription="Avançar"/>
+
+            <ImageButton
+                android:id="@+id/btn_web_refresh"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_refresh"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Recarregar"/>
 
             <TextView
-                android:layout_width="match_parent"
+                android:id="@+id/tv_web_url"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="Selecione um vídeo salvo no seu dispositivo"
-                android:textColor="#666666"
-                android:textSize="13sp"
-                android:gravity="center"
-                android:paddingTop="16dp"/>
+                android:layout_weight="1"
+                android:textColor="#888888"
+                android:textSize="11sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:paddingHorizontal="8dp"
+                android:text="m.youtube.com"/>
 
-            <Button
-                android:id="@+id/btn_local"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="16dp"
-                android:text="Selecionar Vídeo do Dispositivo"
-                android:textSize="14sp"
-                android:backgroundTint="#1a6b3c"/>
         </LinearLayout>
 
-    </FrameLayout>
-
-    <!-- Barra de navegação do YouTube (voltar/avançar/recarregar) -->
-    <LinearLayout
-        android:id="@+id/layout_youtube_nav"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:orientation="horizontal"
-        android:background="#0f3460"
-        android:gravity="center_vertical"
-        android:visibility="gone">
-
-        <ImageButton
-            android:id="@+id/btn_web_back"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_arrow_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:alpha="0.3"
-            android:contentDescription="Voltar"/>
-
-        <ImageButton
-            android:id="@+id/btn_web_forward"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_arrow_forward"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:alpha="0.3"
-            android:contentDescription="Avançar"/>
-
-        <ImageButton
-            android:id="@+id/btn_web_refresh"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_refresh"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Recarregar"/>
-
-        <TextView
-            android:id="@+id/tv_web_url"
-            android:layout_width="0dp"
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/bottom_nav"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="#888888"
-            android:textSize="11sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:paddingHorizontal="8dp"
-            android:text="m.youtube.com"/>
+            android:background="#1a1a2e"
+            app:menu="@menu/bottom_nav_menu"
+            app:itemIconTint="@color/bottom_nav_colors"
+            app:itemTextColor="@color/bottom_nav_colors"/>
 
     </LinearLayout>
 
-    <com.google.android.material.bottomnavigation.BottomNavigationView
-        android:id="@+id/bottom_nav"
+    <!-- Overlay de fullscreen (fica por cima de tudo) -->
+    <FrameLayout
+        android:id="@+id/fullscreen_overlay"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#1a1a2e"
-        app:menu="@menu/bottom_nav_menu"
-        app:itemIconTint="@color/bottom_nav_colors"
-        app:itemTextColor="@color/bottom_nav_colors"/>
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:background="#000000">
 
-</LinearLayout>
+        <androidx.media3.ui.PlayerView
+            android:id="@+id/player_view_fullscreen"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+    </FrameLayout>
+
+</FrameLayout>
