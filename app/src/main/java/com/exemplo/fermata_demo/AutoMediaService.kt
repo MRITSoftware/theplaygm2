@@ -133,10 +133,6 @@ class AutoMediaService : MediaBrowserServiceCompat() {
                 override fun onPlay()  { onPlay?.invoke()  }
                 override fun onPause() { onPause?.invoke() }
                 override fun onStop()  { onStop?.invoke()  }
-                override fun onPlayPause() {
-                    val tocando = controller?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING
-                    if (tocando) onPause?.invoke() else onPlay?.invoke()
-                }
             })
 
             // Estado e metadata iniciais
