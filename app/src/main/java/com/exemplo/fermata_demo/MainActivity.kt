@@ -42,8 +42,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,10 +56,14 @@ class MainActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
 
     private var listaCompleta = emptyList<M3uEntry>()
-    private var categoriaAtiva = "Todos"
+    private var categoriaAtiva: String? = null  // null = grade de categorias, non-null = lista de canais
     private var termoBusca = ""
     private var listaCarregada = false
+    private var abaAtiva = R.id.nav_youtube
 
+    // Fullscreen — cacheadas após setContentView para evitar NPE no listener
+    private lateinit var pvFullscreen: PlayerView
+    private lateinit var overlayFullscreen: FrameLayout
     private var isFullscreen = false
     private var fullscreenOriginPlayer: PlayerView? = null
     private var fullscreenWebCallback: WebChromeClient.CustomViewCallback? = null
@@ -83,6 +85,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
+
+        // Cachear views de fullscreen imediatamente após setContentView
+        pvFullscreen = findViewById(R.id.player_view_fullscreen)
+        overlayFullscreen = findViewById(R.id.fullscreen_overlay)
 
         if (!desbloqueioAtivo) {
             aplicarModoBloqueado()
@@ -126,9 +132,10 @@ class MainActivity : AppCompatActivity() {
                 when {
                     isFullscreen -> sairFullscreen()
                     fullscreenWebCallback != null -> fullscreenWebCallback?.onCustomViewHidden()
+                    abaAtiva == R.id.nav_tv && categoriaAtiva != null -> mostrarCategorias()
                     else -> {
                         val webview = findViewById<WebView>(R.id.webview)
-                        if (webview.visibility == View.VISIBLE && webview.canGoBack()) {
+                        if (abaAtiva == R.id.nav_youtube && webview.canGoBack()) {
                             webview.goBack()
                         } else {
                             isEnabled = false
@@ -180,6 +187,10 @@ class MainActivity : AppCompatActivity() {
             javaScriptCanOpenWindowsAutomatically = true
             setSupportZoom(true)
             mediaPlaybackRequiresUserGesture = false
+            useWideViewPort = true
+            loadWithOverviewMode = true
+            // User agent Chrome Mobile para exibição completa do YouTube
+            userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         }
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
@@ -202,45 +213,40 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 atualizarBotoesNavWeb(view)
                 findViewById<TextView>(R.id.tv_web_url).text = Uri.parse(url).host ?: url
+                // Guard impede múltiplos setInterval por contexto de página
                 view.evaluateJavascript("""
                     (function() {
                         if (window._gm2active) return;
                         window._gm2active = true;
                         function pular() {
-                            ['.ytp-skip-ad-button','.ytp-ad-skip-button',
-                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
+                            ['.ytp-skip-ad-button', '.ytp-ad-skip-button',
+                             '.ytp-ad-skip-button-modern', '.ytp-ad-skip-button-slot button'
                             ].forEach(function(s) {
                                 var b = document.querySelector(s);
                                 if (b) b.click();
                             });
                             var overlay = document.querySelector('.ytp-ad-overlay-close-button');
                             if (overlay) overlay.click();
-                            var video = document.querySelector('video');
-                            if (video && document.querySelector('.ytp-ad-player-overlay')) {
-                                video.muted = true;
-                                video.playbackRate = 16;
-                            }
                         }
                         pular();
-                        setInterval(pular, 300);
+                        setInterval(pular, 500);
                     })();
                 """.trimIndent(), null)
             }
         }
 
+        // WebChromeClient com suporte a fullscreen do player do YouTube
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowCustomView(view: View, callback: CustomViewCallback) {
                 fullscreenWebCallback = callback
-                val overlay = findViewById<FrameLayout>(R.id.fullscreen_overlay)
-                overlay.addView(view)
-                overlay.visibility = View.VISIBLE
+                overlayFullscreen.addView(view)
+                overlayFullscreen.visibility = View.VISIBLE
                 hideSystemUi()
             }
 
             override fun onHideCustomView() {
-                val overlay = findViewById<FrameLayout>(R.id.fullscreen_overlay)
-                overlay.removeAllViews()
-                overlay.visibility = View.GONE
+                overlayFullscreen.removeAllViews()
+                overlayFullscreen.visibility = View.GONE
                 fullscreenWebCallback = null
                 showSystemUi()
             }
@@ -263,9 +269,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configurarM3u() {
-        val recycler = findViewById<RecyclerView>(R.id.rv_playlist)
-        recycler.layoutManager = LinearLayoutManager(this)
-        recycler.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        val rvCategories = findViewById<RecyclerView>(R.id.rv_categories)
+        val rvPlaylist = findViewById<RecyclerView>(R.id.rv_playlist)
+        rvCategories.layoutManager = LinearLayoutManager(this)
+        rvCategories.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        rvPlaylist.layoutManager = LinearLayoutManager(this)
+        rvPlaylist.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
 
         findViewById<EditText>(R.id.et_search).addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable?) { termoBusca = s?.toString() ?: ""; filtrarLista() }
@@ -273,17 +282,21 @@ class MainActivity : AppCompatActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
         })
 
+        findViewById<ImageButton>(R.id.btn_back_categories).setOnClickListener {
+            mostrarCategorias()
+        }
+
         findViewById<Button>(R.id.btn_carregar).setOnClickListener {
             val url = findViewById<EditText>(R.id.et_m3u_url).text.toString().trim()
             if (url.isEmpty()) {
                 Toast.makeText(this, "Digite a URL da lista M3U", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            carregarLista(url, recycler)
+            carregarLista(url)
         }
     }
 
-    private fun carregarLista(url: String, recycler: RecyclerView) {
+    private fun carregarLista(url: String) {
         val btn = findViewById<Button>(R.id.btn_carregar)
         btn.isEnabled = false
         btn.text = "Carregando…"
@@ -301,17 +314,10 @@ class MainActivity : AppCompatActivity() {
             listaCompleta = items
             listaCarregada = true
 
-            val grupos = items.map { it.group }.distinct().sorted()
-            criarChipsCategorias(grupos)
+            mostrarCategorias()
 
-            findViewById<View>(R.id.layout_search_chips).visibility = View.VISIBLE
-            findViewById<View>(R.id.tv_placeholder_tv).visibility = View.GONE
-            recycler.visibility = View.VISIBLE
-
-            categoriaAtiva = "Todos"
-            termoBusca = ""
-            filtrarLista()
-            Toast.makeText(this@MainActivity, "${items.size} item(s) em ${grupos.size} categoria(s)", Toast.LENGTH_SHORT).show()
+            val numCategorias = items.map { it.group }.distinct().size
+            Toast.makeText(this@MainActivity, "${items.size} item(s) em $numCategorias categoria(s)", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -338,39 +344,47 @@ class MainActivity : AppCompatActivity() {
         resultado
     } catch (e: Exception) { emptyList() }
 
-    private fun criarChipsCategorias(grupos: List<String>) {
-        val chipGroup = findViewById<ChipGroup>(R.id.chip_group_categories)
-        chipGroup.removeAllViews()
+    private fun mostrarCategorias() {
+        categoriaAtiva = null
+        termoBusca = ""
 
-        (listOf("Todos") + grupos).forEach { grupo ->
-            val chip = Chip(this).apply {
-                text = grupo
-                isCheckable = true
-                isChecked = grupo == "Todos"
-                setTextColor(getColor(android.R.color.white))
-                chipBackgroundColor = android.content.res.ColorStateList.valueOf(
-                    if (grupo == "Todos") 0xFF1a1a2e.toInt() else 0xFF16213e.toInt()
-                )
-                chipStrokeWidth = 1f
-                setChipStrokeColorResource(android.R.color.darker_gray)
-            }
-            chipGroup.addView(chip)
-        }
+        findViewById<View>(R.id.layout_category_header).visibility = View.GONE
+        findViewById<View>(R.id.et_search).visibility = View.GONE
+        findViewById<View>(R.id.tv_placeholder_tv).visibility = View.GONE
+        findViewById<View>(R.id.rv_playlist).visibility = View.GONE
+        findViewById<View>(R.id.rv_categories).visibility = View.VISIBLE
 
-        chipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
-            val id = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
-            categoriaAtiva = group.findViewById<Chip>(id)?.text?.toString() ?: "Todos"
-            filtrarLista()
-        }
+        val categorias = listaCompleta
+            .groupBy { it.group }
+            .map { CategoryItem(it.key, it.value.size) }
+            .sortedBy { it.name }
+
+        val rvCategories = findViewById<RecyclerView>(R.id.rv_categories)
+        rvCategories.adapter = CategoryAdapter(categorias) { cat -> abrirCategoria(cat.name) }
+    }
+
+    private fun abrirCategoria(nome: String) {
+        categoriaAtiva = nome
+        termoBusca = ""
+
+        val count = listaCompleta.count { it.group == nome }
+        findViewById<TextView>(R.id.tv_category_name_header).text = nome
+        findViewById<TextView>(R.id.tv_channel_count_header).text = "$count item(s)"
+
+        findViewById<View>(R.id.layout_category_header).visibility = View.VISIBLE
+        findViewById<View>(R.id.et_search).visibility = View.VISIBLE
+        (findViewById<EditText>(R.id.et_search)).setText("")
+        findViewById<View>(R.id.rv_categories).visibility = View.GONE
+        findViewById<View>(R.id.rv_playlist).visibility = View.VISIBLE
+
+        filtrarLista()
     }
 
     private fun filtrarLista() {
+        val cat = categoriaAtiva ?: return
         val filtrada = listaCompleta.filter { entry ->
-            val matchCategoria = categoriaAtiva == "Todos" || entry.group == categoriaAtiva
-            val matchBusca = termoBusca.isEmpty() ||
-                entry.title.contains(termoBusca, ignoreCase = true) ||
-                entry.group.contains(termoBusca, ignoreCase = true)
-            matchCategoria && matchBusca
+            entry.group == cat &&
+            (termoBusca.isEmpty() || entry.title.contains(termoBusca, ignoreCase = true))
         }
         val recycler = findViewById<RecyclerView>(R.id.rv_playlist)
         recycler.adapter = PlaylistAdapter(filtrada) { reproduzirTV(it) }
@@ -382,6 +396,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun mostrarAba(itemId: Int) {
+        abaAtiva = itemId
         val webview = findViewById<WebView>(R.id.webview)
         val layoutTv = findViewById<View>(R.id.layout_tv)
         val layoutOffline = findViewById<View>(R.id.layout_offline)
@@ -428,7 +443,6 @@ class MainActivity : AppCompatActivity() {
     private fun configurarFullscreenPlayers() {
         val pvTV = findViewById<PlayerView>(R.id.player_view_tv)
         val pvOffline = findViewById<PlayerView>(R.id.player_view_offline)
-        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
 
         pvTV.setFullscreenButtonClickListener { entering ->
             if (entering) entrarFullscreenPlayer(pvTV)
@@ -436,7 +450,8 @@ class MainActivity : AppCompatActivity() {
         pvOffline.setFullscreenButtonClickListener { entering ->
             if (entering) entrarFullscreenPlayer(pvOffline)
         }
-        pvFs.setFullscreenButtonClickListener { entering ->
+        // pvFullscreen já está inicializado como campo da Activity
+        pvFullscreen.setFullscreenButtonClickListener { entering ->
             if (!entering) sairFullscreen()
         }
     }
@@ -445,19 +460,17 @@ class MainActivity : AppCompatActivity() {
         isFullscreen = true
         fullscreenOriginPlayer = origin
         origin.player = null
-        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
-        pvFs.player = player
-        findViewById<FrameLayout>(R.id.fullscreen_overlay).visibility = View.VISIBLE
+        pvFullscreen.player = player
+        overlayFullscreen.visibility = View.VISIBLE
         hideSystemUi()
     }
 
     private fun sairFullscreen() {
         isFullscreen = false
-        val pvFs = findViewById<PlayerView>(R.id.player_view_fullscreen)
-        pvFs.player = null
+        pvFullscreen.player = null
         fullscreenOriginPlayer?.player = player
         fullscreenOriginPlayer = null
-        findViewById<FrameLayout>(R.id.fullscreen_overlay).visibility = View.GONE
+        overlayFullscreen.visibility = View.GONE
         showSystemUi()
     }
 
@@ -511,7 +524,7 @@ class MainActivity : AppCompatActivity() {
     private fun adicionarVideoNaBiblioteca(uri: Uri) {
         try {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (e: SecurityException) { /* URI não persistível, mas pode funcionar */ }
+        } catch (e: SecurityException) { /* URI sem permissão persistível */ }
 
         val nome = contentResolver.query(uri, arrayOf("_display_name"), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
@@ -599,9 +612,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.layout_youtube_nav).visibility = v
         findViewById<View>(R.id.btn_add_video).visibility = v
         if (isInPiP) {
-            findViewById<View>(R.id.layout_search_chips).visibility = View.GONE
-        } else if (listaCarregada) {
-            findViewById<View>(R.id.layout_search_chips).visibility = View.VISIBLE
+            findViewById<View>(R.id.layout_category_header).visibility = View.GONE
+            findViewById<View>(R.id.et_search).visibility = View.GONE
+        } else if (categoriaAtiva != null) {
+            findViewById<View>(R.id.layout_category_header).visibility = View.VISIBLE
+            findViewById<View>(R.id.et_search).visibility = View.VISIBLE
         }
     }
 

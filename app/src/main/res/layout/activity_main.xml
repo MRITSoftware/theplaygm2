@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Conteúdo principal -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -50,6 +49,7 @@
                     android:layout_height="200dp"
                     android:background="#000000"/>
 
+                <!-- URL da lista M3U -->
                 <LinearLayout
                     android:id="@+id/layout_m3u"
                     android:layout_width="match_parent"
@@ -81,43 +81,60 @@
                         android:backgroundTint="#e94560"/>
                 </LinearLayout>
 
+                <!-- Cabeçalho da categoria selecionada (visível apenas ao entrar em uma pasta) -->
                 <LinearLayout
-                    android:id="@+id/layout_search_chips"
+                    android:id="@+id/layout_category_header"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
                     android:background="#16213e"
                     android:visibility="gone">
 
-                    <EditText
-                        android:id="@+id/et_search"
-                        android:layout_width="match_parent"
+                    <ImageButton
+                        android:id="@+id/btn_back_categories"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:src="@drawable/ic_arrow_back"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Voltar para categorias"/>
+
+                    <TextView
+                        android:id="@+id/tv_category_name_header"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:hint="🔍  Pesquisar canal, filme ou série..."
-                        android:inputType="text"
+                        android:layout_weight="1"
                         android:textColor="#ffffff"
-                        android:textColorHint="#666666"
-                        android:backgroundTint="#333333"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="10dp"
-                        android:singleLine="true"/>
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:paddingStart="4dp"/>
 
-                    <HorizontalScrollView
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/tv_channel_count_header"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:scrollbars="none"
-                        android:paddingVertical="4dp">
-
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/chip_group_categories"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:paddingHorizontal="8dp"
-                            app:singleSelection="true"
-                            app:selectionRequired="true"/>
-                    </HorizontalScrollView>
+                        android:textColor="#888888"
+                        android:textSize="12sp"
+                        android:paddingEnd="12dp"/>
                 </LinearLayout>
 
+                <!-- Barra de pesquisa (visível ao entrar em uma categoria) -->
+                <EditText
+                    android:id="@+id/et_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="🔍  Pesquisar..."
+                    android:inputType="text"
+                    android:textColor="#ffffff"
+                    android:textColorHint="#666666"
+                    android:backgroundTint="#333333"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:singleLine="true"
+                    android:background="#16213e"
+                    android:visibility="gone"/>
+
+                <!-- Área principal: placeholder / lista de categorias / lista de canais -->
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
@@ -133,6 +150,15 @@
                         android:textSize="14sp"
                         android:padding="32dp"/>
 
+                    <!-- Lista de pastas/categorias -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_categories"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#0d0d1a"
+                        android:visibility="gone"/>
+
+                    <!-- Lista de canais dentro da categoria -->
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_playlist"
                         android:layout_width="match_parent"
@@ -158,7 +184,6 @@
                     android:layout_height="220dp"
                     android:background="#000000"/>
 
-                <!-- Header da biblioteca -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -269,7 +294,7 @@
 
     </LinearLayout>
 
-    <!-- Overlay de fullscreen (fica por cima de tudo) -->
+    <!-- Overlay de fullscreen (por cima de tudo) -->
     <FrameLayout
         android:id="@+id/fullscreen_overlay"
         android:layout_width="match_parent"
