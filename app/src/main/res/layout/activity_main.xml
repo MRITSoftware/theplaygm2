@@ -11,17 +11,6 @@
         android:orientation="vertical"
         android:background="#000000">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="#1a1a2e"
-            android:elevation="4dp"
-            app:title="GM2 Play"
-            app:titleTextColor="#ffffff"
-            app:subtitleTextColor="#e94560"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Dark"/>
-
         <FrameLayout
             android:id="@+id/content_frame"
             android:layout_width="match_parent"

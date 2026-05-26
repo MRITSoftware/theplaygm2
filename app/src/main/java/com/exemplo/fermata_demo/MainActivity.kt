@@ -14,8 +14,6 @@ import android.os.Bundle
 import android.util.Rational
 import android.text.Editable
 import android.text.TextWatcher
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -31,7 +29,6 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -56,12 +53,10 @@ class MainActivity : AppCompatActivity() {
     private var player: ExoPlayer? = null
 
     private var listaCompleta = emptyList<M3uEntry>()
-    private var categoriaAtiva: String? = null  // null = grade de categorias, non-null = lista de canais
+    private var categoriaAtiva: String? = null
     private var termoBusca = ""
-    private var listaCarregada = false
     private var abaAtiva = R.id.nav_youtube
 
-    // Fullscreen — cacheadas após setContentView para evitar NPE no listener
     private lateinit var pvFullscreen: PlayerView
     private lateinit var overlayFullscreen: FrameLayout
     private var isFullscreen = false
@@ -84,9 +79,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(findViewById<Toolbar>(R.id.toolbar))
 
-        // Cachear views de fullscreen imediatamente após setContentView
         pvFullscreen = findViewById(R.id.player_view_fullscreen)
         overlayFullscreen = findViewById(R.id.fullscreen_overlay)
 
@@ -104,26 +97,6 @@ class MainActivity : AppCompatActivity() {
         carregarBiblioteca()
         configurarListaOffline()
         mostrarAba(R.id.nav_youtube)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.toolbar_menu, menu)
-        return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        for (i in 0 until menu.size()) menu.getItem(i).isVisible = desbloqueioAtivo
-        return super.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
-        R.id.action_status -> {
-            Toast.makeText(this, "DESBLOQUEADO | BuildConfig.DESBLOQUEADO = true", Toast.LENGTH_LONG).show()
-            true
-        }
-        R.id.action_reverter -> { reverter(); true }
-        R.id.action_mirror -> { ativarMirroring(); true }
-        else -> super.onOptionsItemSelected(item)
     }
 
     private fun configurarBotaoVoltar() {
@@ -149,8 +122,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun aplicarModoBloqueado() {
-        supportActionBar?.subtitle = "BLOQUEADO"
-        invalidateOptionsMenu()
         findViewById<View>(R.id.bottom_nav).visibility = View.GONE
         findViewById<View>(R.id.layout_tv).visibility = View.GONE
         findViewById<View>(R.id.layout_offline).visibility = View.GONE
@@ -189,7 +160,6 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             useWideViewPort = true
             loadWithOverviewMode = true
-            // User agent Chrome Mobile para exibição completa do YouTube
             userAgentString = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
         }
         webView.webViewClient = object : WebViewClient() {
@@ -213,29 +183,40 @@ class MainActivity : AppCompatActivity() {
                 super.onPageFinished(view, url)
                 atualizarBotoesNavWeb(view)
                 findViewById<TextView>(R.id.tv_web_url).text = Uri.parse(url).host ?: url
-                // Guard impede múltiplos setInterval por contexto de página
+                // Detecta anúncio: acelera a 32x enquanto rola, restaura ao terminar
                 view.evaluateJavascript("""
                     (function() {
                         if (window._gm2active) return;
                         window._gm2active = true;
-                        function pular() {
-                            ['.ytp-skip-ad-button', '.ytp-ad-skip-button',
-                             '.ytp-ad-skip-button-modern', '.ytp-ad-skip-button-slot button'
-                            ].forEach(function(s) {
-                                var b = document.querySelector(s);
-                                if (b) b.click();
+                        var adRolando = false;
+                        function tick() {
+                            ['.ytp-skip-ad-button','.ytp-ad-skip-button',
+                             '.ytp-ad-skip-button-modern','.ytp-ad-skip-button-slot button'
+                            ].forEach(function(s){
+                                var b=document.querySelector(s); if(b) b.click();
                             });
-                            var overlay = document.querySelector('.ytp-ad-overlay-close-button');
-                            if (overlay) overlay.click();
+                            var overlay=document.querySelector('.ytp-ad-overlay-close-button');
+                            if(overlay) overlay.click();
+                            var video=document.querySelector('video');
+                            if(!video) return;
+                            var temAd=!!(document.querySelector('.ytp-ad-player-overlay,.ytp-ad-module'));
+                            if(temAd && !adRolando){
+                                adRolando=true;
+                                video.muted=true;
+                                video.playbackRate=32;
+                            } else if(!temAd && adRolando){
+                                adRolando=false;
+                                video.playbackRate=1;
+                                video.muted=false;
+                            }
                         }
-                        pular();
-                        setInterval(pular, 500);
+                        tick();
+                        setInterval(tick,300);
                     })();
                 """.trimIndent(), null)
             }
         }
 
-        // WebChromeClient com suporte a fullscreen do player do YouTube
         webView.webChromeClient = object : WebChromeClient() {
             override fun onShowCustomView(view: View, callback: CustomViewCallback) {
                 fullscreenWebCallback = callback
@@ -268,6 +249,16 @@ class MainActivity : AppCompatActivity() {
         findViewById<ImageButton>(R.id.btn_web_forward).alpha = if (view.canGoForward()) 1f else 0.3f
     }
 
+    // Mapeia qualquer group-title para uma das 3 super-categorias
+    private fun superCategoria(group: String): String {
+        val g = group.uppercase()
+        return when {
+            "SERIE" in g -> "SÉRIES"
+            "FILM" in g || "MOVIE" in g -> "FILMES"
+            else -> "CANAIS"
+        }
+    }
+
     private fun configurarM3u() {
         val rvCategories = findViewById<RecyclerView>(R.id.rv_categories)
         val rvPlaylist = findViewById<RecyclerView>(R.id.rv_playlist)
@@ -294,6 +285,14 @@ class MainActivity : AppCompatActivity() {
             }
             carregarLista(url)
         }
+
+        // Carrega a URL salva automaticamente ao abrir o app
+        val urlSalva = getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
+            .getString("url", "") ?: ""
+        if (urlSalva.isNotEmpty()) {
+            findViewById<EditText>(R.id.et_m3u_url).setText(urlSalva)
+            carregarLista(urlSalva)
+        }
     }
 
     private fun carregarLista(url: String) {
@@ -311,13 +310,19 @@ class MainActivity : AppCompatActivity() {
                 return@launch
             }
 
-            listaCompleta = items
-            listaCarregada = true
+            // Salva a URL para auto-carregar na próxima sessão
+            getSharedPreferences("gm2_m3u", Context.MODE_PRIVATE)
+                .edit().putString("url", url).apply()
 
+            listaCompleta = items
             mostrarCategorias()
 
-            val numCategorias = items.map { it.group }.distinct().size
-            Toast.makeText(this@MainActivity, "${items.size} item(s) em $numCategorias categoria(s)", Toast.LENGTH_SHORT).show()
+            val canais = items.count { superCategoria(it.group) == "CANAIS" }
+            val filmes = items.count { superCategoria(it.group) == "FILMES" }
+            val series = items.count { superCategoria(it.group) == "SÉRIES" }
+            Toast.makeText(this@MainActivity,
+                "📺 $canais canais  🎬 $filmes filmes  🎞 $series séries",
+                Toast.LENGTH_LONG).show()
         }
     }
 
@@ -354,10 +359,12 @@ class MainActivity : AppCompatActivity() {
         findViewById<View>(R.id.rv_playlist).visibility = View.GONE
         findViewById<View>(R.id.rv_categories).visibility = View.VISIBLE
 
-        val categorias = listaCompleta
-            .groupBy { it.group }
-            .map { CategoryItem(it.key, it.value.size) }
-            .sortedBy { it.name }
+        // Ordem fixa: CANAIS → FILMES → SÉRIES
+        val ordem = listOf("CANAIS", "FILMES", "SÉRIES")
+        val categorias = ordem.mapNotNull { superCat ->
+            val count = listaCompleta.count { superCategoria(it.group) == superCat }
+            if (count > 0) CategoryItem(superCat, count) else null
+        }
 
         val rvCategories = findViewById<RecyclerView>(R.id.rv_categories)
         rvCategories.adapter = CategoryAdapter(categorias) { cat -> abrirCategoria(cat.name) }
@@ -367,7 +374,7 @@ class MainActivity : AppCompatActivity() {
         categoriaAtiva = nome
         termoBusca = ""
 
-        val count = listaCompleta.count { it.group == nome }
+        val count = listaCompleta.count { superCategoria(it.group) == nome }
         findViewById<TextView>(R.id.tv_category_name_header).text = nome
         findViewById<TextView>(R.id.tv_channel_count_header).text = "$count item(s)"
 
@@ -383,7 +390,7 @@ class MainActivity : AppCompatActivity() {
     private fun filtrarLista() {
         val cat = categoriaAtiva ?: return
         val filtrada = listaCompleta.filter { entry ->
-            entry.group == cat &&
+            superCategoria(entry.group) == cat &&
             (termoBusca.isEmpty() || entry.title.contains(termoBusca, ignoreCase = true))
         }
         val recycler = findViewById<RecyclerView>(R.id.rv_playlist)
@@ -417,17 +424,14 @@ class MainActivity : AppCompatActivity() {
                 youtubeNav.visibility = View.VISIBLE
                 if (webview.url.isNullOrEmpty() || webview.url == "about:blank")
                     webview.loadUrl("https://m.youtube.com")
-                supportActionBar?.title = "GM2 Play — Youtube"
             }
             R.id.nav_tv -> {
                 layoutTv.visibility = View.VISIBLE
                 pvTV.player = player
-                supportActionBar?.title = "GM2 Play — TV"
             }
             R.id.nav_offline -> {
                 layoutOffline.visibility = View.VISIBLE
                 pvOffline.player = player
-                supportActionBar?.title = "GM2 Play — Vídeos Offline"
             }
         }
     }
@@ -450,7 +454,6 @@ class MainActivity : AppCompatActivity() {
         pvOffline.setFullscreenButtonClickListener { entering ->
             if (entering) entrarFullscreenPlayer(pvOffline)
         }
-        // pvFullscreen já está inicializado como campo da Activity
         pvFullscreen.setFullscreenButtonClickListener { entering ->
             if (!entering) sairFullscreen()
         }
@@ -511,7 +514,7 @@ class MainActivity : AppCompatActivity() {
                 val obj = arr.getJSONObject(i)
                 videoLibrary.add(VideoEntry(obj.getString("title"), obj.getString("uri")))
             }
-        } catch (e: Exception) { /* ignora dados corrompidos */ }
+        } catch (e: Exception) { }
     }
 
     private fun salvarBiblioteca() {
@@ -524,7 +527,7 @@ class MainActivity : AppCompatActivity() {
     private fun adicionarVideoNaBiblioteca(uri: Uri) {
         try {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        } catch (e: SecurityException) { /* URI sem permissão persistível */ }
+        } catch (e: SecurityException) { }
 
         val nome = contentResolver.query(uri, arrayOf("_display_name"), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
@@ -580,21 +583,6 @@ class MainActivity : AppCompatActivity() {
             pedirPermissao.launch(permissao)
     }
 
-    private fun reverter() {
-        desbloqueioAtivo = false
-        getSharedPreferences("fermata_demo", Context.MODE_PRIVATE)
-            .edit().putBoolean("unknown_sources_ativado", false).apply()
-        player?.stop()
-        with(findViewById<WebView>(R.id.webview)) { clearCache(true); clearHistory() }
-        aplicarModoBloqueado()
-        Toast.makeText(this, "✅ Revertido para modo bloqueado", Toast.LENGTH_LONG).show()
-    }
-
-    private fun ativarMirroring() {
-        mediaProjectionManager = getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        startActivityForResult(mediaProjectionManager.createScreenCaptureIntent(), 1001)
-    }
-
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (player?.isPlaying == true) {
@@ -606,7 +594,6 @@ class MainActivity : AppCompatActivity() {
     override fun onPictureInPictureModeChanged(isInPiP: Boolean, newConfig: Configuration) {
         super.onPictureInPictureModeChanged(isInPiP, newConfig)
         val v = if (isInPiP) View.GONE else View.VISIBLE
-        findViewById<View>(R.id.toolbar).visibility = v
         findViewById<View>(R.id.bottom_nav).visibility = v
         findViewById<View>(R.id.layout_m3u).visibility = v
         findViewById<View>(R.id.layout_youtube_nav).visibility = v
@@ -624,8 +611,8 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1001)
             Toast.makeText(this,
-                if (resultCode == Activity.RESULT_OK) "📱 Espelhamento autorizado"
-                else "❌ Espelhamento negado",
+                if (resultCode == Activity.RESULT_OK) "Espelhamento autorizado"
+                else "Espelhamento negado",
                 Toast.LENGTH_LONG).show()
     }
 
